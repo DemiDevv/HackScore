@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     secret_key: str = "change-me"
     upload_dir: str = "/app/uploads"
     api_prefix: str = "/api"
+    environment: str = "development"
 
     model_config = SettingsConfigDict(
         env_file=".env",
