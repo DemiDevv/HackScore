@@ -1,0 +1,1 @@
+"""HackScore backend package."""

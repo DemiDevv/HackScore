@@ -1,0 +1,2052 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HackScore — Платформа оценки хакатонов</title>
+  <link rel="stylesheet" href="hs-styles.css">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+const { useState, useEffect, useRef, useCallback, createContext, useContext, Fragment } = React;
+
+// ══════════════════════════════════════════════
+// ICONS (Lucide-style, 24x24 viewBox, stroke)
+// ══════════════════════════════════════════════
+const I = {
+  home:<><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>,
+  user:<><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>,
+  users:<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>,
+  mail:<><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></>,
+  lock:<><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>,
+  eye:<><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></>,
+  'eye-off':<><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></>,
+  upload:<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></>,
+  download:<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></>,
+  'file-text':<><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/></>,
+  code:<><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></>,
+  check:<><polyline points="20 6 9 17 4 12"/></>,
+  x:<><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></>,
+  plus:<><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></>,
+  minus:<><line x1="5" x2="19" y1="12" y2="12"/></>,
+  search:<><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></>,
+  bell:<><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></>,
+  settings:<><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></>,
+  'log-out':<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></>,
+  menu:<><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></>,
+  'chevron-right':<><polyline points="9 18 15 12 9 6"/></>,
+  'chevron-left':<><polyline points="15 18 9 12 15 6"/></>,
+  'chevron-down':<><polyline points="6 9 12 15 18 9"/></>,
+  'arrow-right':<><line x1="5" x2="19" y1="12" y2="12"/><polyline points="12 5 19 12 12 19"/></>,
+  'arrow-left':<><line x1="19" x2="5" y1="12" y2="12"/><polyline points="12 19 5 12 12 5"/></>,
+  'external-link':<><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></>,
+  trophy:<><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></>,
+  star:<><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></>,
+  'bar-chart':<><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></>,
+  clock:<><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>,
+  calendar:<><rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></>,
+  trash:<><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></>,
+  edit:<><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></>,
+  save:<><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></>,
+  play:<><polygon points="5 3 19 12 5 21 5 3"/></>,
+  film:<><rect width="20" height="20" x="2" y="2" rx="2.18"/><line x1="7" x2="7" y1="2" y2="22"/><line x1="17" x2="17" y1="2" y2="22"/><line x1="2" x2="22" y1="12" y2="12"/></>,
+  target:<><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></>,
+  zap:<><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></>,
+  'git-branch':<><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></>,
+  clipboard:<><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect width="8" height="4" x="8" y="2" rx="1"/></>,
+  send:<><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></>,
+  'alert-circle':<><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></>,
+  info:<><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></>,
+  loader:<><line x1="12" x2="12" y1="2" y2="6"/><line x1="12" x2="12" y1="18" y2="22"/><line x1="4.93" x2="7.76" y1="4.93" y2="7.76"/><line x1="16.24" x2="19.07" y1="16.24" y2="19.07"/><line x1="2" x2="6" y1="12" y2="12"/><line x1="18" x2="22" y1="12" y2="12"/></>,
+  presentation:<><path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="m7 21 5-5 5 5"/></>,
+  crown:<><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M4 18h16v2H4z"/></>,
+  inbox:<><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></>,
+  'grip-vertical':<><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></>,
+  rocket:<><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></>,
+  hash:<><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></>,
+  shield:<><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></>,
+  'file-code':<><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="m10 13-2 2 2 2"/><path d="m14 17 2-2-2-2"/></>,
+};
+
+function Icon({name,size=20,className='',style={},onClick}){
+  const c=I[name];
+  if(!c) return <span style={{width:size,height:size,display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:size*.6,...style}}>{name}</span>;
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={{flexShrink:0,...style}} onClick={onClick}>{c}</svg>;
+}
+
+// ══════════════════════════════════════════════
+// BUTTON
+// ══════════════════════════════════════════════
+function Button({children,variant='primary',size='md',icon,iconRight,loading,disabled,onClick,style:cs,fullWidth,type='button'}){
+  const[h,setH]=useState(false);
+  const sz={sm:{padding:'6px 12px',fontSize:12,gap:6},md:{padding:'8px 16px',fontSize:13,gap:8},lg:{padding:'12px 24px',fontSize:14,gap:8}};
+  const vs={
+    primary:{background:'linear-gradient(135deg,var(--accent),#4F5BD5 50%,var(--cyan))',color:'#fff',border:'none'},
+    secondary:{background:'transparent',color:'var(--t1)',border:'1px solid var(--border)'},
+    ghost:{background:'transparent',color:'var(--t2)',border:'none'},
+    danger:{background:'var(--red-15)',color:'var(--red)',border:'1px solid rgba(239,68,68,.2)'},
+  };
+  const hv={primary:{filter:'brightness(1.15)',transform:'translateY(-1px)'},secondary:{background:'rgba(255,255,255,.04)',borderColor:'var(--t3)'},ghost:{background:'rgba(255,255,255,.06)'},danger:{filter:'brightness(1.2)'}};
+  const isz=size==='sm'?14:16;
+  return(
+    <button type={type} onClick={!disabled&&!loading?onClick:undefined} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)}
+      style={{display:'inline-flex',alignItems:'center',justifyContent:'center',fontFamily:'var(--fb)',fontWeight:500,cursor:disabled?'not-allowed':'pointer',
+        borderRadius:'var(--rs)',transition:'all var(--fast)',whiteSpace:'nowrap',width:fullWidth?'100%':undefined,
+        opacity:disabled?.5:1,...sz[size],...vs[variant],...(h&&!disabled?hv[variant]:{}),...cs}}>
+      {loading?<Icon name="loader" size={isz} style={{animation:'spin 1s linear infinite'}}/>:icon?<Icon name={icon} size={isz}/>:null}
+      {children&&<span>{children}</span>}
+      {iconRight&&<Icon name={iconRight} size={isz}/>}
+    </button>
+  );
+}
+
+// ══════════════════════════════════════════════
+// BADGE
+// ══════════════════════════════════════════════
+const badgeColors={default:['var(--card-h)','var(--t2)'],success:['var(--green-15)','var(--green)'],error:['var(--red-15)','var(--red)'],warning:['var(--yellow-15)','var(--yellow)'],info:['var(--accent-15)','var(--accent-l)'],purple:['rgba(168,85,247,.15)','#A855F7'],orange:['rgba(249,115,22,.15)','#F97316'],cyan:['var(--cyan-15)','var(--cyan)']};
+function Badge({children,variant='default',pulse,dot,style:cs}){
+  const[bg,fg]=badgeColors[variant]||badgeColors.default;
+  return <span style={{display:'inline-flex',alignItems:'center',gap:6,padding:'3px 10px',borderRadius:20,fontSize:12,fontWeight:500,background:bg,color:fg,whiteSpace:'nowrap',...cs}}>
+    {(pulse||dot)&&<span style={{width:6,height:6,borderRadius:'50%',background:fg,...(pulse?{animation:'pulse 2s infinite'}:{})}}/>}{children}</span>;
+}
+
+// ══════════════════════════════════════════════
+// CARD
+// ══════════════════════════════════════════════
+function Card({children,hover,onClick,style:cs,padding='20px',className='',glow}){
+  const[h,setH]=useState(false);
+  return <div className={className} onClick={onClick} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)}
+    style={{background:'var(--card)',borderRadius:'var(--rl)',border:'1px solid var(--border)',padding,transition:'all var(--tr)',
+      cursor:onClick?'pointer':undefined,...(hover&&h?{borderColor:'var(--t3)',background:'var(--card-h)',transform:'translateY(-2px)'}:{}),
+      ...(glow?{boxShadow:'0 0 20px rgba(99,102,241,.2)'}:{}),...cs}}>
+    {children}
+  </div>;
+}
+
+// ══════════════════════════════════════════════
+// INPUT
+// ══════════════════════════════════════════════
+function Input({icon,label,placeholder,type='text',value,onChange,rightIcon,onRightClick,error,style:cs,disabled}){
+  const[focused,setF]=useState(false);
+  const[showPw,setSP]=useState(false);
+  const isP=type==='password';
+  return <div style={{display:'flex',flexDirection:'column',gap:6,...cs}}>
+    {label&&<label style={{fontSize:13,fontWeight:500,color:'var(--t2)'}}>{label}</label>}
+    <div style={{display:'flex',alignItems:'center',gap:10,background:'var(--input-bg)',border:`1px solid ${error?'var(--red)':focused?'var(--border-f)':'var(--border)'}`,
+      borderRadius:'var(--rs)',padding:'10px 14px',transition:'border-color var(--fast)'}}>
+      {icon&&<Icon name={icon} size={18} style={{color:'var(--t3)',flexShrink:0}}/>}
+      <input type={isP&&showPw?'text':type} placeholder={placeholder} value={value} onChange={e=>onChange?.(e.target.value)} disabled={disabled}
+        onFocus={()=>setF(true)} onBlur={()=>setF(false)}
+        style={{flex:1,background:'none',border:'none',outline:'none',color:'var(--t1)',fontSize:14,fontFamily:'var(--fb)',width:'100%'}}/>
+      {isP&&<Icon name={showPw?'eye-off':'eye'} size={18} style={{color:'var(--t3)',cursor:'pointer'}} onClick={()=>setSP(!showPw)}/>}
+      {rightIcon&&<Icon name={rightIcon} size={18} style={{color:'var(--t3)',cursor:'pointer'}} onClick={onRightClick}/>}
+    </div>
+    {error&&<span style={{fontSize:12,color:'var(--red)'}}>{error}</span>}
+  </div>;
+}
+
+function Textarea({label,placeholder,value,onChange,rows=3,style:cs}){
+  const[focused,setF]=useState(false);
+  return <div style={{display:'flex',flexDirection:'column',gap:6,...cs}}>
+    {label&&<label style={{fontSize:13,fontWeight:500,color:'var(--t2)'}}>{label}</label>}
+    <textarea placeholder={placeholder} value={value} onChange={e=>onChange?.(e.target.value)} rows={rows}
+      onFocus={()=>setF(true)} onBlur={()=>setF(false)}
+      style={{background:'var(--input-bg)',border:`1px solid ${focused?'var(--border-f)':'var(--border)'}`,borderRadius:'var(--rs)',
+        padding:'10px 14px',color:'var(--t1)',fontSize:14,fontFamily:'var(--fb)',resize:'vertical',outline:'none',transition:'border-color var(--fast)'}}/>
+  </div>;
+}
+
+function Select({label,options,value,onChange,style:cs}){
+  return <div style={{display:'flex',flexDirection:'column',gap:6,...cs}}>
+    {label&&<label style={{fontSize:13,fontWeight:500,color:'var(--t2)'}}>{label}</label>}
+    <select value={value} onChange={e=>onChange?.(e.target.value)}
+      style={{background:'var(--input-bg)',border:'1px solid var(--border)',borderRadius:'var(--rs)',padding:'10px 14px',color:'var(--t1)',fontSize:14,outline:'none',appearance:'none',
+        backgroundImage:`url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
+        backgroundRepeat:'no-repeat',backgroundPosition:'right 12px center'}}>
+      {options.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
+  </div>;
+}
+
+// ══════════════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════════════
+function Modal({isOpen,onClose,title,children,width=480}){
+  if(!isOpen)return null;
+  return ReactDOM.createPortal(
+    <div style={{position:'fixed',inset:0,zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:24}} onClick={onClose}>
+      <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,.6)',backdropFilter:'blur(8px)'}}/>
+      <div onClick={e=>e.stopPropagation()} style={{position:'relative',background:'var(--card)',border:'1px solid var(--border)',borderRadius:'var(--rl)',
+        width:'100%',maxWidth:width,maxHeight:'80vh',overflow:'auto',animation:'scaleIn .2s ease'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'16px 20px',borderBottom:'1px solid var(--border)'}}>
+          <h3 style={{fontSize:16,fontWeight:600}}>{title}</h3>
+          <div style={{cursor:'pointer',color:'var(--t3)',padding:4}} onClick={onClose}><Icon name="x" size={18}/></div>
+        </div>
+        <div style={{padding:20}}>{children}</div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+// ══════════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════════
+function Tabs({tabs,active,onChange,style:cs}){
+  return <div style={{display:'flex',gap:2,borderBottom:'1px solid var(--border)',paddingBottom:0,...cs}}>
+    {tabs.map(t=>{
+      const isA=active===t.key;
+      return <button key={t.key} onClick={()=>onChange(t.key)}
+        style={{display:'flex',alignItems:'center',gap:6,padding:'10px 16px',fontSize:13,fontWeight:isA?600:400,
+          color:isA?'var(--accent-l)':'var(--t3)',background:'none',border:'none',borderBottom:isA?'2px solid var(--accent)':'2px solid transparent',
+          cursor:'pointer',transition:'all var(--fast)',marginBottom:-1,whiteSpace:'nowrap'}}>
+        {t.icon&&<Icon name={t.icon} size={15}/>}{t.label}
+      </button>;
+    })}
+  </div>;
+}
+
+// ══════════════════════════════════════════════
+// PROGRESS BAR
+// ══════════════════════════════════════════════
+function ProgressBar({value=0,color='var(--accent)',height=6,style:cs,showLabel}){
+  return <div style={{display:'flex',alignItems:'center',gap:10,...cs}}>
+    <div style={{flex:1,height,background:'var(--border)',borderRadius:height,overflow:'hidden'}}>
+      <div style={{width:`${Math.min(100,value)}%`,height:'100%',background:color,borderRadius:height,transition:'width .6s ease'}}/>
+    </div>
+    {showLabel&&<span style={{fontSize:12,color:'var(--t2)',whiteSpace:'nowrap'}}>{Math.round(value)}%</span>}
+  </div>;
+}
+
+// ══════════════════════════════════════════════
+// STEPPER
+// ══════════════════════════════════════════════
+function Stepper({steps,style:cs}){
+  return <div style={{display:'flex',alignItems:'center',gap:0,...cs}}>
+    {steps.map((s,i)=>{
+      const done=s.completed;const act=s.active;
+      return <Fragment key={i}>
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          <div style={{width:28,height:28,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:600,
+            background:done?'var(--accent)':act?'var(--accent-15)':'var(--border)',color:done?'#fff':act?'var(--accent-l)':'var(--t3)',
+            border:act?'2px solid var(--accent)':'2px solid transparent',transition:'all var(--tr)'}}>
+            {done?<Icon name="check" size={14}/>:i+1}
+          </div>
+          <span style={{fontSize:13,fontWeight:act||done?500:400,color:act?'var(--t1)':done?'var(--accent-l)':'var(--t3)',whiteSpace:'nowrap'}}>{s.label}</span>
+        </div>
+        {i<steps.length-1&&<div style={{flex:'0 0 32px',height:2,background:done?'var(--accent)':'var(--border)',margin:'0 8px',borderRadius:1}}/>}
+      </Fragment>;
+    })}
+  </div>;
+}
+
+// ══════════════════════════════════════════════
+// FILE UPLOAD
+// ══════════════════════════════════════════════
+function FileUpload({accept,label,description,icon='upload',onFile,fileName,onRemove,style:cs}){
+  const[drag,setD]=useState(false);
+  const ref=useRef();
+  return <div style={{...cs}}>
+    {!fileName?
+      <div onClick={()=>ref.current?.click()} onDragOver={e=>{e.preventDefault();setD(true)}} onDragLeave={()=>setD(false)} onDrop={e=>{e.preventDefault();setD(false);onFile?.(e.dataTransfer.files[0]?.name)}}
+        style={{border:`2px dashed ${drag?'var(--accent)':'var(--border)'}`,borderRadius:'var(--rl)',padding:'32px 24px',textAlign:'center',cursor:'pointer',
+          background:drag?'var(--accent-10)':'transparent',transition:'all var(--tr)'}}>
+        <Icon name={icon} size={32} style={{color:drag?'var(--accent-l)':'var(--t3)',margin:'0 auto 12px',display:'block'}}/>
+        <div style={{fontSize:14,fontWeight:500,color:'var(--t2)',marginBottom:4}}>{label||'Перетащите файл сюда'}</div>
+        <div style={{fontSize:12,color:'var(--t3)'}}>{description||accept}</div>
+        <Button variant="secondary" size="sm" style={{marginTop:12}}>Выбрать файл</Button>
+        <input ref={ref} type="file" accept={accept} style={{display:'none'}} onChange={e=>onFile?.(e.target.files[0]?.name)}/>
+      </div>
+    :
+      <div style={{display:'flex',alignItems:'center',gap:12,padding:'12px 16px',background:'var(--card)',border:'1px solid var(--border)',borderRadius:'var(--rm)'}}>
+        <Icon name="file-text" size={18} style={{color:'var(--green)'}}/>
+        <span style={{flex:1,fontSize:13,color:'var(--t1)'}}>{fileName}</span>
+        <Badge variant="success">Загружено</Badge>
+        {onRemove&&<Icon name="x" size={16} style={{color:'var(--t3)',cursor:'pointer'}} onClick={onRemove}/>}
+      </div>
+    }
+  </div>;
+}
+
+// ══════════════════════════════════════════════
+// SCORE SLIDER
+// ══════════════════════════════════════════════
+function ScoreSlider({value=5,onChange,min=0,max=10,label,style:cs}){
+  const pct=((value-min)/(max-min))*100;
+  return <div style={{...cs}}>
+    {label&&<div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}><span style={{fontSize:13,fontWeight:500,color:'var(--t2)'}}>{label}</span><span style={{fontSize:14,fontWeight:600,color:'var(--accent-l)'}}>{value}</span></div>}
+    <div style={{position:'relative',height:6,background:'var(--border)',borderRadius:3}}>
+      <div style={{position:'absolute',left:0,top:0,height:'100%',width:`${pct}%`,background:'var(--accent)',borderRadius:3,transition:'width .15s ease'}}/>
+    </div>
+    <input type="range" min={min} max={max} step={1} value={value} onChange={e=>onChange?.(+e.target.value)}
+      style={{width:'100%',marginTop:-8,opacity:0,height:22,cursor:'pointer',position:'relative',zIndex:1}}/>
+    <div style={{display:'flex',justifyContent:'space-between',marginTop:2}}><span style={{fontSize:11,color:'var(--t4)'}}>{min}</span><span style={{fontSize:11,color:'var(--t4)'}}>{max}</span></div>
+  </div>;
+}
+
+// ══════════════════════════════════════════════
+// EMPTY STATE
+// ══════════════════════════════════════════════
+function EmptyState({icon='inbox',title,description,action,onAction,style:cs}){
+  return <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'48px 24px',textAlign:'center',...cs}}>
+    <div style={{width:56,height:56,borderRadius:'50%',background:'var(--accent-10)',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:16}}>
+      <Icon name={icon} size={24} style={{color:'var(--accent-l)'}}/>
+    </div>
+    <h3 style={{fontSize:16,fontWeight:600,marginBottom:6}}>{title}</h3>
+    {description&&<p style={{fontSize:13,color:'var(--t3)',maxWidth:320,marginBottom:action?16:0}}>{description}</p>}
+    {action&&<Button variant="secondary" size="sm" onClick={onAction}>{action}</Button>}
+  </div>;
+}
+
+// ══════════════════════════════════════════════
+// TOAST SYSTEM
+// ══════════════════════════════════════════════
+const ToastCtx=createContext(null);
+function ToastProvider({children}){
+  const[toasts,setT]=useState([]);
+  const add=useCallback((msg,type='info')=>{const id=Date.now();setT(p=>[...p,{id,msg,type}]);setTimeout(()=>setT(p=>p.filter(t=>t.id!==id)),3000)},[]);
+  const toast=useCallback({success:m=>add(m,'success'),error:m=>add(m,'error'),info:m=>add(m,'info'),warning:m=>add(m,'warning')},[add]);
+  return <ToastCtx.Provider value={toast}>{children}
+    <div style={{position:'fixed',bottom:20,right:20,zIndex:9999,display:'flex',flexDirection:'column',gap:8}}>
+      {toasts.map(t=>{
+        const c={success:'var(--green)',error:'var(--red)',warning:'var(--yellow)',info:'var(--accent)'}[t.type];
+        return <div key={t.id} style={{background:'var(--card)',border:'1px solid var(--border)',borderLeft:`3px solid ${c}`,borderRadius:'var(--rm)',padding:'12px 16px',
+          fontSize:13,color:'var(--t1)',minWidth:240,animation:'slideR .25s ease',boxShadow:'0 8px 24px rgba(0,0,0,.4)'}}>{t.msg}</div>;
+      })}
+    </div>
+  </ToastCtx.Provider>;
+}
+function useToast(){return useContext(ToastCtx)}
+
+// ══════════════════════════════════════════════
+// STAT CARD
+// ══════════════════════════════════════════════
+function StatCard({value,label,icon,color='var(--accent)',style:cs}){
+  return <Card style={{padding:'16px 20px',...cs}}>
+    <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
+      <div>
+        <div style={{fontSize:28,fontWeight:700,fontFamily:'var(--fh)',color}}>{value}</div>
+        <div style={{fontSize:13,color:'var(--t3)',marginTop:2}}>{label}</div>
+      </div>
+      {icon&&<div style={{width:40,height:40,borderRadius:'var(--rm)',background:`color-mix(in srgb,${color} 15%,transparent)`,display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <Icon name={icon} size={20} style={{color}}/>
+      </div>}
+    </div>
+  </Card>;
+}
+
+// Export all
+Object.assign(window,{Icon,Button,Badge,Card,Input,Textarea,Select,Modal,Tabs,ProgressBar,Stepper,FileUpload,ScoreSlider,EmptyState,ToastProvider,useToast,ToastCtx,StatCard});
+
+  </script>
+
+  <script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+// ══════════════════════════════════════════════
+// SIDEBAR NAV DATA
+// ══════════════════════════════════════════════
+const NAV = {
+  participant: [
+    { section: 'ХАКАТОН', items: [
+      { key: 'hackathons', icon: 'clipboard', label: 'Мои хакатоны' },
+      { key: 'team', icon: 'users', label: 'Моя команда' },
+    ]},
+    { section: 'РЕШЕНИЕ', items: [
+      { key: 'submission', icon: 'upload', label: 'Загрузка решения' },
+      { key: 'results', icon: 'check', label: 'Результаты проверок' },
+    ]},
+    { section: 'АЛГОРИТМЫ', items: [
+      { key: 'algo', icon: 'code', label: 'Задачи' },
+      { key: 'algo-results', icon: 'bar-chart', label: 'Мои попытки' },
+    ]},
+  ],
+  jury: [
+    { section: 'ОЦЕНКА', items: [
+      { key: 'reviews', icon: 'clipboard', label: 'Решения команд' },
+      { key: 'my-scores', icon: 'star', label: 'Мои оценки' },
+    ]},
+    { section: 'РЕЗУЛЬТАТЫ', items: [
+      { key: 'leaderboard', icon: 'trophy', label: 'Лидерборд' },
+    ]},
+  ],
+  organizer: [
+    { section: 'УПРАВЛЕНИЕ', items: [
+      { key: 'hackathon-manage', icon: 'trophy', label: 'Хакатон' },
+      { key: 'criteria', icon: 'bar-chart', label: 'Критерии оценки' },
+      { key: 'teams-overview', icon: 'users', label: 'Команды' },
+    ]},
+    { section: 'АЛГОРИТМЫ', items: [
+      { key: 'algo-manage', icon: 'edit', label: 'Задачи' },
+      { key: 'algo-results-org', icon: 'clipboard', label: 'Результаты' },
+    ]},
+    { section: 'ИТОГИ', items: [
+      { key: 'leaderboard', icon: 'trophy', label: 'Лидерборд' },
+      { key: 'export', icon: 'download', label: 'Экспорт' },
+    ]},
+  ],
+};
+
+const ROLE_LABELS = { participant: 'Участник', jury: 'Жюри', organizer: 'Организатор' };
+const ROLE_COLORS = { participant: 'info', jury: 'purple', organizer: 'orange' };
+const STATUS_LABELS = { draft: 'Черновик', registration: 'Регистрация', in_progress: 'В процессе', judging: 'Оценка', finished: 'Завершён' };
+const STATUS_COLORS = { draft: 'default', registration: 'info', in_progress: 'success', judging: 'warning', finished: 'purple' };
+
+// ══════════════════════════════════════════════
+// HEADER
+// ══════════════════════════════════════════════
+function Header({ user, role, onMenuClick, onRoleSwitch, onLogout }) {
+  const [showMenu, setMenu] = useState(false);
+  const menuRef = useRef();
+
+  useEffect(() => {
+    const handler = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenu(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <header className="glass" style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 'var(--hdr)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', zIndex: 100 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div onClick={onMenuClick} style={{ display: 'none', cursor: 'pointer', color: 'var(--t2)', padding: 4, className: 'mobile-menu' }}>
+          <Icon name="menu" size={22} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 'var(--rm)', background: 'linear-gradient(135deg, var(--accent), var(--cyan))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="zap" size={18} style={{ color: '#fff' }} />
+          </div>
+          <span className="gradient-text" style={{ fontSize: 18, fontWeight: 700, fontFamily: 'var(--fh)', letterSpacing: '-0.02em' }}>HackScore</span>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ position: 'relative', cursor: 'pointer', color: 'var(--t3)' }}>
+          <Icon name="bell" size={20} />
+          <div style={{ position: 'absolute', top: -2, right: -2, width: 8, height: 8, borderRadius: '50%', background: 'var(--red)', border: '2px solid var(--bg)' }} />
+        </div>
+
+        <div ref={menuRef} style={{ position: 'relative' }}>
+          <div onClick={() => setMenu(!showMenu)} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '6px 10px', borderRadius: 'var(--rm)', background: showMenu ? 'rgba(255,255,255,.04)' : 'transparent', transition: 'background var(--fast)' }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent-d), var(--accent-l))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, color: '#fff' }}>
+              {user?.name?.[0] || 'U'}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: 13, fontWeight: 500 }}>{user?.name || 'Пользователь'}</span>
+              <span style={{ fontSize: 11, color: 'var(--t3)' }}>{ROLE_LABELS[role]}</span>
+            </div>
+            <Icon name="chevron-down" size={14} style={{ color: 'var(--t3)' }} />
+          </div>
+
+          {showMenu && (
+            <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 8, width: 220, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--rl)', overflow: 'hidden', animation: 'fadeIn .15s ease', boxShadow: '0 12px 32px rgba(0,0,0,.5)', zIndex: 200 }}>
+              <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 12, color: 'var(--t3)', marginBottom: 8 }}>Переключить роль</div>
+                {['participant', 'jury', 'organizer'].map(r => (
+                  <div key={r} onClick={() => { onRoleSwitch(r); setMenu(false); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 'var(--rs)', cursor: 'pointer', background: r === role ? 'var(--accent-15)' : 'transparent', color: r === role ? 'var(--accent-l)' : 'var(--t2)', fontSize: 13, fontWeight: r === role ? 500 : 400, transition: 'background var(--fast)', marginBottom: 2 }}>
+                    <Badge variant={ROLE_COLORS[r]} style={{ fontSize: 11, padding: '2px 8px' }}>{ROLE_LABELS[r]}</Badge>
+                    {r === role && <Icon name="check" size={14} style={{ marginLeft: 'auto' }} />}
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding: 4 }}>
+                <div onClick={onLogout} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', cursor: 'pointer', color: 'var(--red)', fontSize: 13, borderRadius: 'var(--rs)', transition: 'background var(--fast)' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--red-15)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                  <Icon name="log-out" size={16} /> Выйти
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}
+
+// ══════════════════════════════════════════════
+// SIDEBAR
+// ══════════════════════════════════════════════
+function Sidebar({ role, activePage, onNavigate, hackathonStatus = 'in_progress' }) {
+  const nav = NAV[role] || [];
+  return (
+    <aside style={{ position: 'fixed', top: 'var(--hdr)', left: 0, bottom: 0, width: 'var(--side)', background: 'var(--bg2)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', zIndex: 90, overflow: 'auto' }}>
+      <nav style={{ flex: 1, padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {nav.map((group, gi) => (
+          <div key={gi} style={{ marginBottom: 8 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--t4)', letterSpacing: '0.08em', padding: '8px 12px 6px', textTransform: 'uppercase' }}>{group.section}</div>
+            {group.items.map(item => {
+              const isActive = activePage === item.key;
+              return (
+                <div key={item.key} onClick={() => onNavigate(item.key)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 'var(--rs)', cursor: 'pointer', fontSize: 13, fontWeight: isActive ? 500 : 400,
+                    color: isActive ? 'var(--accent-l)' : 'var(--t2)', background: isActive ? 'var(--accent-15)' : 'transparent', transition: 'all var(--fast)' }}
+                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,.04)' }}
+                  onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}>
+                  <Icon name={item.icon} size={18} style={{ color: isActive ? 'var(--accent-l)' : 'var(--t3)' }} />
+                  {item.label}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </nav>
+
+      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--t3)' }}>
+          <Badge variant={STATUS_COLORS[hackathonStatus]} pulse={hackathonStatus === 'in_progress'} dot>
+            {STATUS_LABELS[hackathonStatus]}
+          </Badge>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+// ══════════════════════════════════════════════
+// APP LAYOUT
+// ══════════════════════════════════════════════
+function AppLayout({ children, role, activePage, onNavigate, user, onRoleSwitch, onLogout }) {
+  return (
+    <div style={{ height: '100%' }}>
+      <Header user={user} role={role} onRoleSwitch={onRoleSwitch} onLogout={onLogout} />
+      <Sidebar role={role} activePage={activePage} onNavigate={onNavigate} />
+      <main style={{ marginLeft: 'var(--side)', marginTop: 'var(--hdr)', minHeight: 'calc(100vh - var(--hdr))', padding: 28, background: 'var(--bg)' }}>
+        <div style={{ maxWidth: 1200, animation: 'fadeIn .3s ease' }}>
+          {children}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════
+// PAGE HEADER
+// ══════════════════════════════════════════════
+function PageHeader({ title, subtitle, action, actionIcon, actionLabel, onAction, children }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, gap: 16, flexWrap: 'wrap' }}>
+      <div>
+        <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em' }}>{title}</h1>
+        {subtitle && <p style={{ fontSize: 14, color: 'var(--t3)', marginTop: 4 }}>{subtitle}</p>}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {children}
+        {actionLabel && <Button icon={actionIcon} onClick={onAction}>{actionLabel}</Button>}
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { NAV, ROLE_LABELS, ROLE_COLORS, STATUS_LABELS, STATUS_COLORS, Header, Sidebar, AppLayout, PageHeader });
+
+  </script>
+
+  <script type="text/babel">
+const { useState } = React;
+
+// ══════════════════════════════════════════════
+// LOGIN PAGE
+// ══════════════════════════════════════════════
+function LoginPage({ onLogin, onSwitch }) {
+  const [email, setEmail] = useState('team1@hackscore.ru');
+  const [password, setPassword] = useState('team123');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setTimeout(() => { setLoading(false); onLogin({ email, password }); }, 600);
+  };
+
+  return (
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+      {/* Left — Decorative */}
+      <div className="mesh-bg" style={{ flex: '0 0 58%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+        {/* Floating decorative elements */}
+        <div style={{ position: 'absolute', top: '15%', left: '12%', padding: '14px 18px', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 'var(--rl)', fontFamily: 'var(--fm)', fontSize: 12, color: 'var(--accent-l)', animation: 'floatUp 6s ease-in-out infinite', backdropFilter: 'blur(8px)' }}>
+          <span style={{ color: 'var(--t3)' }}>const</span> score = <span style={{ color: 'var(--green)' }}>analyze</span>(code);
+        </div>
+        <div style={{ position: 'absolute', bottom: '20%', right: '10%', padding: '14px 18px', background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.18)', borderRadius: 'var(--rl)', fontFamily: 'var(--fm)', fontSize: 12, color: 'var(--cyan)', animation: 'floatDown 5s ease-in-out infinite', animationDelay: '1s', backdropFilter: 'blur(8px)' }}>
+          <span style={{ color: 'var(--t3)' }}>verdict:</span> <span style={{ color: 'var(--green)' }}>"OK"</span> ✓
+        </div>
+        <div style={{ position: 'absolute', top: '55%', left: '8%', width: 80, height: 80, borderRadius: '50%', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.12)', animation: 'floatDown 7s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', top: '25%', right: '15%', width: 50, height: 50, borderRadius: 'var(--rm)', background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.1)', transform: 'rotate(45deg)', animation: 'floatUp 8s ease-in-out infinite', animationDelay: '2s' }} />
+
+        <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '0 48px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, marginBottom: 24 }}>
+            <div style={{ width: 52, height: 52, borderRadius: 'var(--rl)', background: 'linear-gradient(135deg, var(--accent), var(--cyan))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="zap" size={28} style={{ color: '#fff' }} />
+            </div>
+            <span className="gradient-text" style={{ fontSize: 42, fontWeight: 700, fontFamily: 'var(--fh)', letterSpacing: '-0.03em' }}>HackScore</span>
+          </div>
+          <p style={{ fontSize: 18, color: 'var(--t2)', fontWeight: 400, maxWidth: 380, margin: '0 auto', lineHeight: 1.6 }}>
+            Автоматическая оценка<br />продуктовых решений на хакатонах
+          </p>
+        </div>
+      </div>
+
+      {/* Right — Form */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--card)', padding: 40 }}>
+        <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: 380, animation: 'fadeIn .4s ease' }}>
+          <h2 style={{ fontSize: 26, fontWeight: 700, marginBottom: 6 }}>Вход в систему</h2>
+          <p style={{ color: 'var(--t3)', fontSize: 14, marginBottom: 32 }}>Войдите в свой аккаунт HackScore</p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <Input icon="mail" label="Email" placeholder="email@example.com" type="email" value={email} onChange={setEmail} />
+            <Input icon="lock" label="Пароль" placeholder="Введите пароль" type="password" value={password} onChange={setPassword} />
+          </div>
+
+          <Button type="submit" fullWidth loading={loading} style={{ marginTop: 24, padding: '12px 24px', fontSize: 15 }}>
+            Войти
+          </Button>
+
+          <p style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: 'var(--t3)' }}>
+            Нет аккаунта?{' '}
+            <span onClick={onSwitch} style={{ color: 'var(--accent-l)', cursor: 'pointer', fontWeight: 500 }}>Зарегистрироваться</span>
+          </p>
+
+          <div style={{ marginTop: 32, padding: '14px 16px', background: 'var(--bg)', borderRadius: 'var(--rm)', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: 11, color: 'var(--t3)', marginBottom: 8, fontWeight: 500 }}>Демо-аккаунты</div>
+            {[
+              { email: 'team1@hackscore.ru', role: 'Участник' },
+              { email: 'jury1@hackscore.ru', role: 'Жюри' },
+              { email: 'admin@hackscore.ru', role: 'Организатор' },
+            ].map(d => (
+              <div key={d.email} onClick={() => { setEmail(d.email); setPassword('team123'); }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0', cursor: 'pointer', fontSize: 12, color: 'var(--t2)' }}>
+                <span style={{ fontFamily: 'var(--fm)', fontSize: 11 }}>{d.email}</span>
+                <Badge variant={d.role === 'Участник' ? 'info' : d.role === 'Жюри' ? 'purple' : 'orange'} style={{ fontSize: 10, padding: '1px 6px' }}>{d.role}</Badge>
+              </div>
+            ))}
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════
+// REGISTER PAGE
+// ══════════════════════════════════════════════
+function RegisterPage({ onRegister, onSwitch }) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [password2, setPassword2] = useState('');
+  const [role, setRole] = useState('participant');
+  const [loading, setLoading] = useState(false);
+
+  const roles = [
+    { key: 'participant', icon: 'user', label: 'Участник', desc: 'Загружайте решения и участвуйте в хакатонах' },
+    { key: 'jury', icon: 'star', label: 'Жюри', desc: 'Оценивайте решения команд' },
+    { key: 'organizer', icon: 'settings', label: 'Организатор', desc: 'Создавайте и управляйте хакатонами' },
+  ];
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setTimeout(() => { setLoading(false); onRegister({ name, email, password, role }); }, 600);
+  };
+
+  return (
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+      {/* Left — Decorative */}
+      <div className="mesh-bg" style={{ flex: '0 0 50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: '18%', left: '15%', padding: '12px 16px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: 'var(--rl)', fontFamily: 'var(--fm)', fontSize: 11, color: 'var(--accent-l)', animation: 'floatUp 6s ease-in-out infinite', backdropFilter: 'blur(8px)' }}>
+          team.join(<span style={{ color: 'var(--green)' }}>"SuperCoders"</span>);
+        </div>
+        <div style={{ position: 'absolute', bottom: '22%', right: '12%', padding: '12px 16px', background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.15)', borderRadius: 'var(--rl)', fontFamily: 'var(--fm)', fontSize: 11, color: 'var(--cyan)', animation: 'floatDown 5.5s ease-in-out infinite', animationDelay: '0.5s', backdropFilter: 'blur(8px)' }}>
+          score: <span style={{ color: 'var(--yellow)' }}>8.5</span> / 10
+        </div>
+
+        <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '0 48px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, marginBottom: 24 }}>
+            <div style={{ width: 48, height: 48, borderRadius: 'var(--rl)', background: 'linear-gradient(135deg, var(--accent), var(--cyan))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="zap" size={26} style={{ color: '#fff' }} />
+            </div>
+            <span className="gradient-text" style={{ fontSize: 38, fontWeight: 700, fontFamily: 'var(--fh)', letterSpacing: '-0.03em' }}>HackScore</span>
+          </div>
+          <p style={{ fontSize: 16, color: 'var(--t2)', maxWidth: 340, margin: '0 auto', lineHeight: 1.6 }}>
+            Присоединяйтесь к платформе автоматической оценки хакатонов
+          </p>
+        </div>
+      </div>
+
+      {/* Right — Form */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--card)', padding: 40, overflow: 'auto' }}>
+        <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: 420, animation: 'fadeIn .4s ease' }}>
+          <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 6 }}>Создать аккаунт</h2>
+          <p style={{ color: 'var(--t3)', fontSize: 14, marginBottom: 28 }}>Заполните данные для регистрации</p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <Input icon="user" label="Полное имя" placeholder="Иван Петров" value={name} onChange={setName} />
+            <Input icon="mail" label="Email" placeholder="email@example.com" type="email" value={email} onChange={setEmail} />
+            <Input icon="lock" label="Пароль" placeholder="Минимум 8 символов" type="password" value={password} onChange={setPassword} />
+            <Input icon="lock" label="Повтор пароля" placeholder="Повторите пароль" type="password" value={password2} onChange={setPassword2} error={password2 && password !== password2 ? 'Пароли не совпадают' : ''} />
+          </div>
+
+          <div style={{ marginTop: 20 }}>
+            <label style={{ fontSize: 13, fontWeight: 500, color: 'var(--t2)', display: 'block', marginBottom: 10 }}>Выберите роль</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+              {roles.map(r => {
+                const sel = role === r.key;
+                return (
+                  <div key={r.key} onClick={() => setRole(r.key)}
+                    style={{ padding: '14px 12px', borderRadius: 'var(--rl)', cursor: 'pointer', textAlign: 'center', transition: 'all var(--tr)',
+                      background: sel ? 'var(--accent-15)' : 'var(--bg)', border: sel ? '1px solid var(--accent)' : '1px solid var(--border)',
+                      boxShadow: sel ? '0 0 16px rgba(99,102,241,.2)' : 'none' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', margin: '0 auto 8px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: sel ? 'var(--accent)' : 'var(--border)', color: sel ? '#fff' : 'var(--t3)', transition: 'all var(--tr)' }}>
+                      <Icon name={r.icon} size={18} />
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: sel ? 600 : 400, color: sel ? 'var(--accent-l)' : 'var(--t2)', marginBottom: 2 }}>{r.label}</div>
+                    <div style={{ fontSize: 10, color: 'var(--t3)', lineHeight: 1.3 }}>{r.desc}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <Button type="submit" fullWidth loading={loading} style={{ marginTop: 24, padding: '12px 24px', fontSize: 15 }}>
+            Зарегистрироваться
+          </Button>
+
+          <p style={{ textAlign: 'center', marginTop: 16, fontSize: 13, color: 'var(--t3)' }}>
+            Уже есть аккаунт?{' '}
+            <span onClick={onSwitch} style={{ color: 'var(--accent-l)', cursor: 'pointer', fontWeight: 500 }}>Войти</span>
+          </p>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { LoginPage, RegisterPage });
+
+  </script>
+
+  <script type="text/babel">
+const { useState, Fragment } = React;
+
+// ══════════════════════════════════════════════
+// HACKATHON LIST (Participant)
+// ══════════════════════════════════════════════
+function HackathonListPage({ onNavigate }) {
+  const hackathons = [
+    { id: 1, title: 'Чемпионат по продуктовому программированию 2026', status: 'in_progress', team: 'SuperCoders', members: '3/5', deadline: '06.06.2026', progress: 80 },
+    { id: 2, title: 'AI/ML Хакатон "Нейростарт"', status: 'registration', team: null, members: null, deadline: '15.07.2026', progress: 0 },
+  ];
+  return (
+    <div>
+      <PageHeader title="Мои хакатоны" actionLabel="Присоединиться к хакатону" actionIcon="plus" onAction={() => {}} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(420, 1fr))', gap: 16 }}>
+        {hackathons.map(h => (
+          <Card key={h.id} hover onClick={() => onNavigate('submission')} style={{ padding: 0 }}>
+            <div style={{ padding: '20px 24px' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, lineHeight: 1.3 }}>{h.title}</h3>
+                <Badge variant={STATUS_COLORS[h.status]} dot>{STATUS_LABELS[h.status]}</Badge>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13, color: 'var(--t2)' }}>
+                {h.team && <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="users" size={15} style={{ color: 'var(--t3)' }} />Команда: <span style={{ color: 'var(--t1)', fontWeight: 500 }}>{h.team}</span> · {h.members}</div>}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="calendar" size={15} style={{ color: 'var(--t3)' }} />Дедлайн: {h.deadline}</div>
+              </div>
+              {h.progress > 0 && <div style={{ marginTop: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--t3)', marginBottom: 6 }}><span>Прогресс решения</span><span>{h.progress}%</span></div>
+                <ProgressBar value={h.progress} color="var(--accent)" />
+              </div>}
+            </div>
+            <div style={{ padding: '12px 24px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end' }}>
+              <Button variant="ghost" size="sm" iconRight="arrow-right">{h.team ? 'Перейти' : 'Присоединиться'}</Button>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════
+// TEAM PAGE
+// ══════════════════════════════════════════════
+function TeamPage() {
+  const [inviteEmail, setInviteEmail] = useState('');
+  const members = [
+    { name: 'Иван Петров', email: 'ivan@mail.ru', captain: true, avatar: 'И' },
+    { name: 'Мария Сидорова', email: 'maria@mail.ru', captain: false, avatar: 'М' },
+    { name: 'Алексей Козлов', email: 'alexey@mail.ru', captain: false, avatar: 'А' },
+  ];
+  return (
+    <div>
+      <PageHeader title="Моя команда" subtitle="Чемпионат по продуктовому программированию 2026" />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+        <Card>
+          <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>SuperCoders</h3>
+          <p style={{ fontSize: 13, color: 'var(--t3)', marginBottom: 16 }}>Создана 01.06.2026</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {members.map((m, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: i < members.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: m.captain ? 'linear-gradient(135deg,var(--accent),var(--cyan))' : 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: '#fff' }}>{m.avatar}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 500 }}>{m.name}</div>
+                  <div style={{ fontSize: 12, color: 'var(--t3)' }}>{m.email}</div>
+                </div>
+                {m.captain ? <Badge variant="warning"><Icon name="crown" size={12} /> Капитан</Badge> : <Badge variant="default">Участник</Badge>}
+                {!m.captain && <Icon name="x" size={16} style={{ color: 'var(--t3)', cursor: 'pointer' }} />}
+              </div>
+            ))}
+          </div>
+        </Card>
+        <Card>
+          <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Пригласить участника</h3>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <Input icon="mail" placeholder="email@example.com" value={inviteEmail} onChange={setInviteEmail} style={{ flex: 1 }} />
+            <Button icon="send">Пригласить</Button>
+          </div>
+          <div style={{ marginTop: 20, padding: 16, background: 'var(--bg)', borderRadius: 'var(--rm)', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 8 }}>Ожидают подтверждения</div>
+            <div style={{ fontSize: 13, color: 'var(--t3)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Icon name="clock" size={14} /> elena@mail.ru
+              <Badge variant="warning" style={{ marginLeft: 'auto' }}>Ожидание</Badge>
+            </div>
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════
+// SUBMISSION PAGE — KEY SCREEN
+// ══════════════════════════════════════════════
+function SubmissionPage() {
+  const [submitted, setSubmitted] = useState(false);
+  const [repoUrl, setRepoUrl] = useState('https://github.com/supercoders/hackscore');
+  const [repoType, setRepoType] = useState('url');
+  const [docFile, setDocFile] = useState('documentation.pdf');
+  const [presFile, setPresFile] = useState(null);
+  const [videoType, setVideoType] = useState('file');
+  const [videoFile, setVideoFile] = useState(null);
+  const [activeReport, setReport] = useState(null);
+
+  const steps = [
+    { label: 'Репозиторий', completed: !!repoUrl, active: !repoUrl },
+    { label: 'Документация', completed: !!docFile, active: !!repoUrl && !docFile },
+    { label: 'Презентация', completed: !!presFile, active: !!docFile && !presFile },
+    { label: 'Скринкаст', completed: !!videoFile, active: !!presFile && !videoFile },
+    { label: 'Готово', completed: submitted, active: false },
+  ];
+
+  const checks = [
+    { type: 'code', icon: 'file-code', label: 'Код', status: 'completed', score: 7.5 },
+    { type: 'doc', icon: 'file-text', label: 'Документация', status: 'completed', score: 8.5 },
+    { type: 'pres', icon: 'presentation', label: 'Презентация', status: 'running', score: null },
+    { type: 'video', icon: 'film', label: 'Скринкаст', status: 'failed', score: null, error: 'Формат не поддерживается' },
+  ];
+
+  const checkColors = { completed: 'var(--green)', running: 'var(--yellow)', failed: 'var(--red)', pending: 'var(--t3)' };
+  const checkLabels = { completed: 'Готово', running: 'Проверка...', failed: 'Ошибка', pending: 'Ожидание' };
+
+  const codeReport = {
+    structure: [
+      { name: 'README.md', found: true }, { name: 'requirements.txt', found: true },
+      { name: 'Dockerfile', found: true }, { name: 'LICENSE', found: false }, { name: '.gitignore', found: true },
+    ],
+    metrics: { loc: '4,230', complexity: '3.2', maintainability: '78/100' },
+    lint: { errors: 3, warnings: 12, rating: '8.7/10' },
+    secrets: [{ file: 'config.py', type: 'Потенциальный секрет' }],
+  };
+
+  return (
+    <div>
+      <PageHeader title="Загрузка решения">
+        <Badge variant={submitted ? 'success' : 'warning'}>{submitted ? 'Отправлено' : 'Черновик'}</Badge>
+      </PageHeader>
+
+      <Card style={{ marginBottom: 24, padding: '20px 28px', overflow: 'auto' }}>
+        <Stepper steps={steps} />
+      </Card>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Repository */}
+        <Card>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Icon name="file-code" size={20} style={{ color: 'var(--accent-l)' }} />
+              <h3 style={{ fontSize: 15, fontWeight: 600 }}>Репозиторий кода</h3>
+            </div>
+            {repoUrl && <Badge variant="success"><Icon name="check" size={12} /> Готово</Badge>}
+          </div>
+          <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
+            {['url', 'archive'].map(t => (
+              <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: repoType === t ? 'var(--t1)' : 'var(--t3)', cursor: 'pointer' }}>
+                <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${repoType === t ? 'var(--accent)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {repoType === t && <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />}
+                </div>
+                {t === 'url' ? 'URL репозитория' : 'Архив'}
+              </label>
+            ))}
+          </div>
+          {repoType === 'url' ? <Input icon="git-branch" placeholder="https://github.com/team/project" value={repoUrl} onChange={setRepoUrl} /> : <FileUpload accept=".zip,.tar.gz" label="Перетащите архив сюда" description="ZIP или TAR.GZ · до 50 МБ" />}
+          <Button variant="secondary" size="sm" icon="save" style={{ marginTop: 12 }}>Сохранить</Button>
+        </Card>
+
+        {/* Documentation */}
+        <Card>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Icon name="file-text" size={20} style={{ color: 'var(--accent-l)' }} />
+              <h3 style={{ fontSize: 15, fontWeight: 600 }}>Документация</h3>
+            </div>
+            {docFile ? <Badge variant="success"><Icon name="check" size={12} /> Готово</Badge> : <Badge variant="default">—</Badge>}
+          </div>
+          <FileUpload accept=".pdf,.docx,.md" label="Перетащите файл сюда" description="PDF, DOCX или Markdown · до 20 МБ" icon="file-text" fileName={docFile} onFile={setDocFile} onRemove={() => setDocFile(null)} />
+        </Card>
+
+        {/* Presentation */}
+        <Card>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Icon name="presentation" size={20} style={{ color: 'var(--accent-l)' }} />
+              <h3 style={{ fontSize: 15, fontWeight: 600 }}>Презентация</h3>
+            </div>
+            {presFile ? <Badge variant="success"><Icon name="check" size={12} /> Готово</Badge> : <Badge variant="default">—</Badge>}
+          </div>
+          <FileUpload accept=".pptx,.pdf" label="Перетащите презентацию сюда" description="PPTX или PDF · до 20 МБ" icon="presentation" fileName={presFile} onFile={setPresFile} onRemove={() => setPresFile(null)} />
+        </Card>
+
+        {/* Screencast */}
+        <Card>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Icon name="film" size={20} style={{ color: 'var(--accent-l)' }} />
+              <h3 style={{ fontSize: 15, fontWeight: 600 }}>Скринкаст</h3>
+            </div>
+            {videoFile ? <Badge variant="success"><Icon name="check" size={12} /> Готово</Badge> : <Badge variant="default">—</Badge>}
+          </div>
+          <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
+            {['file', 'url'].map(t => (
+              <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: videoType === t ? 'var(--t1)' : 'var(--t3)', cursor: 'pointer' }}>
+                <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${videoType === t ? 'var(--accent)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {videoType === t && <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />}
+                </div>
+                {t === 'file' ? 'Загрузить файл' : 'Ссылка на видео'}
+              </label>
+            ))}
+          </div>
+          {videoType === 'file' ? <FileUpload accept=".mp4,.webm,.mov" label="Перетащите видео сюда" description="MP4, WebM или MOV · до 100 МБ" icon="film" fileName={videoFile} onFile={setVideoFile} onRemove={() => setVideoFile(null)} /> : <Input icon="play" placeholder="https://youtube.com/watch?v=..." />}
+        </Card>
+      </div>
+
+      {/* Submit button */}
+      {!submitted && <Button fullWidth icon="rocket" onClick={() => setSubmitted(true)} style={{ marginTop: 24, padding: '14px 24px', fontSize: 16 }}>
+        Отправить на проверку
+      </Button>}
+      {!submitted && <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--t3)', marginTop: 8 }}>После отправки начнётся автоматическая проверка всех артефактов</p>}
+
+      {/* Results after submit */}
+      {submitted && (
+        <div style={{ marginTop: 32, animation: 'fadeUp .4s ease' }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Icon name="bar-chart" size={20} style={{ color: 'var(--accent-l)' }} /> Результаты автоматических проверок
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            {checks.map(c => (
+              <Card key={c.type} hover onClick={() => c.status === 'completed' && setReport(activeReport === c.type ? null : c.type)} style={{ cursor: c.status === 'completed' ? 'pointer' : 'default' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                  <Icon name={c.icon} size={20} style={{ color: checkColors[c.status] }} />
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>{c.label}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {c.status === 'running' && <Icon name="loader" size={14} style={{ color: 'var(--yellow)', animation: 'spin 1s linear infinite' }} />}
+                    {c.status === 'completed' && <Icon name="check" size={14} style={{ color: 'var(--green)' }} />}
+                    {c.status === 'failed' && <Icon name="alert-circle" size={14} style={{ color: 'var(--red)' }} />}
+                    <span style={{ fontSize: 13, color: checkColors[c.status] }}>{c.error || checkLabels[c.status]}</span>
+                  </div>
+                  {c.score != null && <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--t1)', fontFamily: 'var(--fh)' }}>{c.score}<span style={{ fontSize: 13, color: 'var(--t3)', fontWeight: 400 }}> / 10</span></span>}
+                </div>
+                {c.status === 'completed' && <div style={{ fontSize: 12, color: 'var(--accent-l)', marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span>{activeReport === c.type ? 'Скрыть отчёт' : 'Подробный отчёт'}</span>
+                  <Icon name={activeReport === c.type ? 'chevron-down' : 'chevron-right'} size={12} />
+                </div>}
+
+                {/* Expanded report */}
+                {activeReport === c.type && c.type === 'code' && (
+                  <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)', animation: 'fadeIn .2s ease' }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>Структура репозитория</div>
+                    {codeReport.structure.map((s, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: s.found ? 'var(--green)' : 'var(--red)', padding: '3px 0' }}>
+                        <Icon name={s.found ? 'check' : 'x'} size={14} /> {s.name}
+                      </div>
+                    ))}
+                    <div style={{ fontSize: 13, fontWeight: 600, marginTop: 14, marginBottom: 8 }}>Метрики</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                      {Object.entries(codeReport.metrics).map(([k, v]) => (
+                        <div key={k} style={{ padding: '8px 12px', background: 'var(--bg)', borderRadius: 'var(--rs)', textAlign: 'center' }}>
+                          <div style={{ fontSize: 16, fontWeight: 700, fontFamily: 'var(--fh)' }}>{v}</div>
+                          <div style={{ fontSize: 10, color: 'var(--t3)', marginTop: 2 }}>{{ loc: 'LOC', complexity: 'Сложность', maintainability: 'MI' }[k]}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 600, marginTop: 14, marginBottom: 8 }}>Линтер (pylint)</div>
+                    <div style={{ fontSize: 13, color: 'var(--t2)' }}>Ошибок: <span style={{ color: 'var(--red)' }}>{codeReport.lint.errors}</span> · Предупреждений: <span style={{ color: 'var(--yellow)' }}>{codeReport.lint.warnings}</span> · Рейтинг: <span style={{ color: 'var(--green)' }}>{codeReport.lint.rating}</span></div>
+                    {codeReport.secrets.length > 0 && <>
+                      <div style={{ fontSize: 13, fontWeight: 600, marginTop: 14, marginBottom: 8, color: 'var(--yellow)' }}>Безопасность</div>
+                      {codeReport.secrets.map((s, i) => <div key={i} style={{ fontSize: 13, color: 'var(--yellow)', display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="alert-circle" size={14} /> {s.type} в {s.file}</div>)}
+                    </>}
+                  </div>
+                )}
+                {activeReport === c.type && c.type === 'doc' && (
+                  <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)', animation: 'fadeIn .2s ease' }}>
+                    <div style={{ fontSize: 13, color: 'var(--t2)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div><Icon name="check" size={14} style={{ color: 'var(--green)' }} /> Раздел «Описание» найден</div>
+                      <div><Icon name="check" size={14} style={{ color: 'var(--green)' }} /> Раздел «Развёртывание» найден</div>
+                      <div><Icon name="check" size={14} style={{ color: 'var(--green)' }} /> Раздел «Использование» найден</div>
+                      <div><Icon name="check" size={14} style={{ color: 'var(--green)' }} /> Изображения найдены (3 шт.)</div>
+                      <div>Объём: 4,830 символов</div>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════
+// RESULTS PAGE
+// ══════════════════════════════════════════════
+function ResultsPage() {
+  const criteria = [
+    { name: 'Полнота MVP', type: 'Авто', score: 8.0, weight: 20, weighted: 1.60 },
+    { name: 'Качество автопроверок', type: 'Эксперт', score: 7.5, weight: 15, weighted: 1.13 },
+    { name: 'Алгоритмический модуль', type: 'Эксперт', score: 9.0, weight: 10, weighted: 0.90 },
+    { name: 'Архитектура и качество кода', type: 'Авто', score: 7.5, weight: 10, weighted: 0.75 },
+    { name: 'UX/UI', type: 'Эксперт', score: 8.0, weight: 10, weighted: 0.80 },
+    { name: 'Работоспособность стенда', type: 'Эксперт', score: 8.5, weight: 10, weighted: 0.85 },
+    { name: 'Документация', type: 'Авто', score: 8.5, weight: 7, weighted: 0.60 },
+    { name: 'Презентация и скринкаст', type: 'Авто', score: 7.0, weight: 6, weighted: 0.42 },
+    { name: 'Инновационность', type: 'Эксперт', score: 7.0, weight: 6, weighted: 0.42 },
+    { name: 'Очная защита', type: 'Эксперт', score: 8.0, weight: 6, weighted: 0.48 },
+  ];
+  const total = criteria.reduce((s, c) => s + c.weighted, 0);
+  const pct = (total / 10) * 100;
+
+  return (
+    <div>
+      <PageHeader title="Мои результаты" subtitle="Чемпионат по продуктовому программированию 2026" />
+      <Card glow style={{ marginBottom: 24, textAlign: 'center', padding: '32px 24px' }}>
+        <div style={{ fontSize: 13, color: 'var(--t3)', marginBottom: 8 }}>Итоговый балл</div>
+        <div style={{ position: 'relative', width: 140, height: 140, margin: '0 auto 16px' }}>
+          <svg width="140" height="140" viewBox="0 0 140 140">
+            <circle cx="70" cy="70" r="60" fill="none" stroke="var(--border)" strokeWidth="8" />
+            <circle cx="70" cy="70" r="60" fill="none" stroke="url(#scoreGrad)" strokeWidth="8" strokeLinecap="round"
+              strokeDasharray={`${pct * 3.77} ${377 - pct * 3.77}`} strokeDashoffset="94" style={{ transition: 'stroke-dasharray 1s ease' }} />
+            <defs><linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="var(--accent)" /><stop offset="100%" stopColor="var(--cyan)" /></linearGradient></defs>
+          </svg>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+            <span style={{ fontSize: 32, fontWeight: 700, fontFamily: 'var(--fh)' }}>{total.toFixed(1)}</span>
+            <span style={{ fontSize: 13, color: 'var(--t3)' }}>из 10</span>
+          </div>
+        </div>
+        <Badge variant="info" style={{ fontSize: 14, padding: '6px 16px' }}>Место в рейтинге: #2 из 15 команд</Badge>
+      </Card>
+
+      <Card style={{ padding: 0 }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead><tr style={{ borderBottom: '1px solid var(--border)' }}>
+              {['Критерий', 'Тип', 'Балл', 'Вес', 'Взвешенный'].map(h => <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 500, color: 'var(--t3)' }}>{h}</th>)}
+            </tr></thead>
+            <tbody>
+              {criteria.map((c, i) => (
+                <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={{ padding: '12px 16px', fontWeight: 500 }}>{c.name}</td>
+                  <td style={{ padding: '12px 16px' }}><Badge variant={c.type === 'Авто' ? 'cyan' : 'purple'}>{c.type}</Badge></td>
+                  <td style={{ padding: '12px 16px', fontFamily: 'var(--fh)', fontWeight: 600 }}>{c.score.toFixed(1)}</td>
+                  <td style={{ padding: '12px 16px', color: 'var(--t3)' }}>{c.weight}%</td>
+                  <td style={{ padding: '12px 16px', fontFamily: 'var(--fh)', fontWeight: 600, color: 'var(--accent-l)' }}>{c.weighted.toFixed(2)}</td>
+                </tr>
+              ))}
+              <tr style={{ background: 'var(--accent-10)' }}>
+                <td colSpan={4} style={{ padding: '14px 16px', fontWeight: 700, fontSize: 14 }}>ИТОГО</td>
+                <td style={{ padding: '14px 16px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: 18, color: 'var(--accent-l)' }}>{total.toFixed(2)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+Object.assign(window, { HackathonListPage, TeamPage, SubmissionPage, ResultsPage });
+
+  </script>
+
+  <script type="text/babel">
+const { useState } = React;
+
+// ══════════════════════════════════════════════
+// ALGO TASKS LIST
+// ══════════════════════════════════════════════
+function AlgoTasksPage({ onNavigate }) {
+  const tasks = [
+    { id: 1, title: 'Сумма двух чисел', time: 1000, mem: 256, verdict: 'OK', color: 'var(--green)' },
+    { id: 2, title: 'Палиндром', time: 1000, mem: 256, verdict: 'WA', color: 'var(--red)' },
+    { id: 3, title: 'Кратчайший путь', time: 2000, mem: 512, verdict: '—', color: 'var(--t3)' },
+    { id: 4, title: 'Максимальный подмассив', time: 1500, mem: 256, verdict: 'TL', color: 'var(--yellow)' },
+    { id: 5, title: 'Скобочная последовательность', time: 1000, mem: 256, verdict: '—', color: 'var(--t3)' },
+  ];
+  const verdictBadge = { OK: 'success', WA: 'error', TL: 'warning', '—': 'default', CE: 'default', RE: 'purple', ML: 'orange' };
+
+  return (
+    <div>
+      <PageHeader title="Алгоритмические задачи" subtitle="Решите задачи для дополнительных баллов" />
+      <Card style={{ padding: 0 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead><tr style={{ borderBottom: '1px solid var(--border)' }}>
+            {['#', 'Название', 'Лимит времени', 'Лимит памяти', 'Мой вердикт'].map(h => (
+              <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 500, color: 'var(--t3)' }}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
+            {tasks.map(t => (
+              <tr key={t.id} onClick={() => onNavigate?.('algo-detail')}
+                style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', transition: 'background var(--fast)' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--card-h)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                <td style={{ padding: '12px 16px', color: 'var(--t3)', fontFamily: 'var(--fh)' }}>{t.id}</td>
+                <td style={{ padding: '12px 16px', fontWeight: 500 }}>{t.title}</td>
+                <td style={{ padding: '12px 16px', color: 'var(--t2)', fontFamily: 'var(--fm)', fontSize: 12 }}>{t.time} мс</td>
+                <td style={{ padding: '12px 16px', color: 'var(--t2)', fontFamily: 'var(--fm)', fontSize: 12 }}>{t.mem} МБ</td>
+                <td style={{ padding: '12px 16px' }}><Badge variant={verdictBadge[t.verdict]}>{t.verdict}</Badge></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════
+// ALGO TASK DETAIL
+// ══════════════════════════════════════════════
+function AlgoTaskDetailPage({ onBack }) {
+  const [lang, setLang] = useState('python');
+  const [code, setCode] = useState('a, b = map(int, input().split())\nprint(a + b)');
+  const [submitting, setSubmitting] = useState(false);
+
+  const examples = [
+    { input: '2 3', output: '5' },
+    { input: '-1 1', output: '0' },
+    { input: '1000000 999999', output: '1999999' },
+  ];
+
+  const attempts = [
+    { id: 3, time: '12:45', lang: 'Python', verdict: 'OK', color: 'success', ms: 45, mb: 12 },
+    { id: 2, time: '12:30', lang: 'Python', verdict: 'WA', color: 'error', ms: 32, mb: 12 },
+    { id: 1, time: '12:15', lang: 'C++', verdict: 'CE', color: 'default', ms: null, mb: null },
+  ];
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+        <Button variant="ghost" size="sm" icon="arrow-left" onClick={() => onBack?.('algo')}>Назад к задачам</Button>
+      </div>
+      <PageHeader title="Задача #1: Сумма двух чисел">
+        <Badge variant="info" style={{ fontSize: 12 }}><Icon name="clock" size={12} /> 1000 мс</Badge>
+        <Badge variant="info" style={{ fontSize: 12 }}>256 МБ</Badge>
+      </PageHeader>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '55fr 45fr', gap: 20 }}>
+        {/* Left — Problem statement */}
+        <Card>
+          <div style={{ fontSize: 14, color: 'var(--t1)', lineHeight: 1.7 }}>
+            <p style={{ marginBottom: 16 }}>Даны два целых числа <em>a</em> и <em>b</em>. Выведите их сумму.</p>
+
+            <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: 'var(--accent-l)' }}>Входные данные</h4>
+            <p style={{ marginBottom: 16, color: 'var(--t2)' }}>Два целых числа <em>a</em> и <em>b</em> (−10⁹ ≤ a, b ≤ 10⁹), разделённые пробелом.</p>
+
+            <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: 'var(--accent-l)' }}>Выходные данные</h4>
+            <p style={{ marginBottom: 16, color: 'var(--t2)' }}>Одно целое число — сумма <em>a</em> и <em>b</em>.</p>
+
+            <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 10, color: 'var(--accent-l)' }}>Примеры</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {examples.map((ex, i) => (
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', border: '1px solid var(--border)', borderRadius: 'var(--rs)', overflow: 'hidden' }}>
+                  <div style={{ padding: '10px 14px', background: 'var(--bg)', borderRight: '1px solid var(--border)' }}>
+                    <div style={{ fontSize: 10, color: 'var(--t3)', fontWeight: 500, marginBottom: 4 }}>Вход</div>
+                    <code style={{ fontFamily: 'var(--fm)', fontSize: 13, color: 'var(--t1)' }}>{ex.input}</code>
+                  </div>
+                  <div style={{ padding: '10px 14px', background: 'var(--bg)' }}>
+                    <div style={{ fontSize: 10, color: 'var(--t3)', fontWeight: 500, marginBottom: 4 }}>Выход</div>
+                    <code style={{ fontFamily: 'var(--fm)', fontSize: 13, color: 'var(--green)' }}>{ex.output}</code>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
+
+        {/* Right — Editor + submissions */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <Card>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <span style={{ fontSize: 14, fontWeight: 600 }}>Решение</span>
+              <div style={{ display: 'flex', gap: 4 }}>
+                {['python', 'cpp', 'java'].map(l => (
+                  <button key={l} onClick={() => setLang(l)}
+                    style={{ padding: '4px 12px', fontSize: 12, fontFamily: 'var(--fm)', borderRadius: 'var(--rs)', border: 'none', cursor: 'pointer',
+                      background: lang === l ? 'var(--accent-15)' : 'transparent', color: lang === l ? 'var(--accent-l)' : 'var(--t3)', transition: 'all var(--fast)' }}>
+                    {{ python: 'Python', cpp: 'C++', java: 'Java' }[l]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{ position: 'relative', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--rm)', overflow: 'hidden' }}>
+              <div style={{ display: 'flex' }}>
+                <div style={{ padding: '12px 0', width: 40, textAlign: 'right', userSelect: 'none', borderRight: '1px solid var(--border)' }}>
+                  {code.split('\n').map((_, i) => <div key={i} style={{ fontFamily: 'var(--fm)', fontSize: 13, lineHeight: '22px', color: 'var(--t4)', paddingRight: 12 }}>{i + 1}</div>)}
+                </div>
+                <textarea value={code} onChange={e => setCode(e.target.value)} spellCheck={false}
+                  style={{ flex: 1, padding: '12px 16px', fontFamily: 'var(--fm)', fontSize: 13, lineHeight: '22px', background: 'none', border: 'none', outline: 'none', color: 'var(--t1)', resize: 'vertical', minHeight: 120 }} />
+              </div>
+            </div>
+            <Button fullWidth icon="send" loading={submitting} onClick={() => { setSubmitting(true); setTimeout(() => setSubmitting(false), 1500); }} style={{ marginTop: 12 }}>
+              Отправить решение
+            </Button>
+          </Card>
+
+          <Card>
+            <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Мои попытки</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {attempts.map(a => (
+                <div key={a.id} style={{ display: 'grid', gridTemplateColumns: '40px 50px 60px 50px 60px 60px', gap: 8, alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border)', fontSize: 12 }}>
+                  <span style={{ color: 'var(--t3)', fontFamily: 'var(--fm)' }}>#{a.id}</span>
+                  <span style={{ color: 'var(--t3)' }}>{a.time}</span>
+                  <span style={{ color: 'var(--t2)' }}>{a.lang}</span>
+                  <Badge variant={a.color} style={{ fontSize: 11, padding: '1px 6px' }}>{a.verdict}</Badge>
+                  <span style={{ fontFamily: 'var(--fm)', color: 'var(--t3)', fontSize: 11 }}>{a.ms ? a.ms + 'ms' : '—'}</span>
+                  <span style={{ fontFamily: 'var(--fm)', color: 'var(--t3)', fontSize: 11 }}>{a.mb ? a.mb + 'MB' : '—'}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { AlgoTasksPage, AlgoTaskDetailPage });
+
+  </script>
+
+  <script type="text/babel">
+const { useState } = React;
+
+// ══════════════════════════════════════════════
+// REVIEW LIST (Jury)
+// ══════════════════════════════════════════════
+function ReviewListPage({ onNavigate }) {
+  const [filter, setFilter] = useState('all');
+  const filters = [
+    { key: 'all', label: 'Все' },
+    { key: 'pending', label: 'Ожидают оценки' },
+    { key: 'scored', label: 'Оценены мной' },
+    { key: 'partial', label: 'Частично оценены' },
+  ];
+
+  const teams = [
+    { id: 1, name: 'SuperCoders', checkStatus: 'completed', autoScore: 8.2, myScore: 7.5, filterKey: 'scored' },
+    { id: 2, name: 'CodeNinjas', checkStatus: 'running', autoScore: null, myScore: null, filterKey: 'pending' },
+    { id: 3, name: 'ByteForce', checkStatus: 'completed', autoScore: 6.8, myScore: null, filterKey: 'pending' },
+    { id: 4, name: 'TeamAlpha', checkStatus: 'completed', autoScore: 7.1, myScore: 6.5, filterKey: 'scored' },
+    { id: 5, name: 'DataWizards', checkStatus: 'completed', autoScore: 5.9, myScore: 4.0, filterKey: 'partial' },
+    { id: 6, name: 'PixelPioneers', checkStatus: 'completed', autoScore: 7.8, myScore: null, filterKey: 'pending' },
+  ];
+
+  const filtered = filter === 'all' ? teams : teams.filter(t => t.filterKey === filter);
+
+  return (
+    <div>
+      <PageHeader title="Решения команд" subtitle="Чемпионат по продуктовому программированию 2026" />
+
+      <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
+        {filters.map(f => (
+          <button key={f.key} onClick={() => setFilter(f.key)}
+            style={{ padding: '6px 14px', fontSize: 13, borderRadius: 20, border: 'none', cursor: 'pointer', fontWeight: filter === f.key ? 500 : 400,
+              background: filter === f.key ? 'var(--accent-15)' : 'var(--card)', color: filter === f.key ? 'var(--accent-l)' : 'var(--t3)', transition: 'all var(--fast)' }}>
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      <Card style={{ padding: 0 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead><tr style={{ borderBottom: '1px solid var(--border)' }}>
+            {['#', 'Команда', 'Статус проверки', 'Авто-балл', 'Моя оценка', 'Действие'].map(h => (
+              <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 500, color: 'var(--t3)' }}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
+            {filtered.map((t, i) => (
+              <tr key={t.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background var(--fast)' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--card-h)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                <td style={{ padding: '14px 16px', color: 'var(--t3)', fontFamily: 'var(--fh)' }}>{t.id}</td>
+                <td style={{ padding: '14px 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 'var(--rs)', background: `hsl(${t.id * 60}, 60%, 25%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, color: '#fff' }}>
+                      {t.name[0]}
+                    </div>
+                    <span style={{ fontWeight: 500 }}>{t.name}</span>
+                  </div>
+                </td>
+                <td style={{ padding: '14px 16px' }}>
+                  <Badge variant={t.checkStatus === 'completed' ? 'success' : 'warning'} dot pulse={t.checkStatus === 'running'}>
+                    {t.checkStatus === 'completed' ? 'Проверено' : 'Проверяется'}
+                  </Badge>
+                </td>
+                <td style={{ padding: '14px 16px', fontFamily: 'var(--fh)', fontWeight: 600 }}>
+                  {t.autoScore != null ? t.autoScore.toFixed(1) : <span style={{ color: 'var(--t4)' }}>—</span>}
+                </td>
+                <td style={{ padding: '14px 16px', fontFamily: 'var(--fh)', fontWeight: 600 }}>
+                  {t.myScore != null ? <span style={{ color: 'var(--accent-l)' }}>{t.myScore.toFixed(1)}</span> : <span style={{ color: 'var(--t4)' }}>—</span>}
+                </td>
+                <td style={{ padding: '14px 16px' }}>
+                  <Button variant={t.myScore != null ? 'ghost' : 'secondary'} size="sm" iconRight="arrow-right" onClick={() => onNavigate?.('review-detail')}
+                    disabled={t.checkStatus !== 'completed'}>
+                    {t.checkStatus !== 'completed' ? 'Ожидание' : t.myScore != null ? 'Изменить' : 'Оценить'}
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════
+// REVIEW DETAIL — MOST IMPORTANT SCREEN
+// ══════════════════════════════════════════════
+function ReviewDetailPage({ onBack }) {
+  const [tab, setTab] = useState('code');
+  const [scores, setScores] = useState({ quality: 7, ux: 8, innovation: 6, standup: 7, algo: 8 });
+  const [comments, setComments] = useState({ quality: 'Хорошая реализация, но не все edge cases покрыты тестами.', ux: '', innovation: '', standup: '', algo: '' });
+  const [saved, setSaved] = useState(false);
+
+  const tabList = [
+    { key: 'code', label: 'Код', icon: 'file-code' },
+    { key: 'doc', label: 'Документация', icon: 'file-text' },
+    { key: 'pres', label: 'Презентация', icon: 'presentation' },
+    { key: 'video', label: 'Скринкаст', icon: 'film' },
+    { key: 'algo', label: 'Алгоритмы', icon: 'code' },
+  ];
+
+  const criteriaList = [
+    { key: 'quality', name: 'Качество автопроверок', weight: '15%' },
+    { key: 'ux', name: 'UX/UI', weight: '10%' },
+    { key: 'innovation', name: 'Инновационность', weight: '6%' },
+    { key: 'standup', name: 'Работоспособность стенда', weight: '10%' },
+    { key: 'algo', name: 'Очная защита', weight: '6%' },
+  ];
+
+  const codeStructure = [
+    { name: 'README.md', found: true }, { name: 'requirements.txt', found: true },
+    { name: 'Dockerfile', found: true }, { name: 'LICENSE', found: false }, { name: '.gitignore', found: true },
+  ];
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <Button variant="ghost" size="sm" icon="arrow-left" onClick={() => onBack?.('reviews')}>Назад к списку</Button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Button variant="ghost" size="sm" icon="chevron-left">CodeNinjas</Button>
+          <Button variant="ghost" size="sm" iconRight="chevron-right">ByteForce</Button>
+        </div>
+      </div>
+
+      <PageHeader title="Оценка: Команда SuperCoders" subtitle="Чемпионат по продуктовому программированию 2026" />
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 20, alignItems: 'start' }}>
+        {/* Left — Artifacts and reports */}
+        <div>
+          <Tabs tabs={tabList} active={tab} onChange={setTab} style={{ marginBottom: 20 }} />
+
+          {tab === 'code' && (
+            <Card style={{ animation: 'fadeIn .2s ease' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <span style={{ fontSize: 13, color: 'var(--t2)' }}>Репозиторий: <a href="#" style={{ color: 'var(--accent-l)' }}>github.com/supercoders/project</a></span>
+                <Button variant="ghost" size="sm" icon="external-link">Открыть</Button>
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>Автоматическая оценка</span>
+                  <span style={{ fontSize: 22, fontWeight: 700, fontFamily: 'var(--fh)', color: 'var(--accent-l)' }}>7.5 <span style={{ fontSize: 14, color: 'var(--t3)', fontWeight: 400 }}>/ 10</span></span>
+                </div>
+                <ProgressBar value={75} color="var(--accent)" height={8} />
+              </div>
+
+              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 10 }}>Структура репозитория</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 20 }}>
+                {codeStructure.map((s, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: s.found ? 'var(--green)' : 'var(--red)' }}>
+                    <Icon name={s.found ? 'check' : 'x'} size={14} /> {s.name}
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 20 }}>
+                {[{ label: 'LOC', value: '4,230' }, { label: 'Цикл. сложность', value: '3.2' }, { label: 'MI', value: '78/100' }].map(m => (
+                  <div key={m.label} style={{ padding: '12px', background: 'var(--bg)', borderRadius: 'var(--rm)', textAlign: 'center' }}>
+                    <div style={{ fontSize: 18, fontWeight: 700, fontFamily: 'var(--fh)' }}>{m.value}</div>
+                    <div style={{ fontSize: 11, color: 'var(--t3)', marginTop: 2 }}>{m.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ padding: '12px 16px', background: 'var(--bg)', borderRadius: 'var(--rm)', border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Линтер (pylint)</div>
+                <div style={{ fontSize: 13, color: 'var(--t2)' }}>
+                  Ошибок: <span style={{ color: 'var(--red)', fontWeight: 600 }}>3</span> · Предупреждений: <span style={{ color: 'var(--yellow)', fontWeight: 600 }}>12</span> · Рейтинг: <span style={{ color: 'var(--green)', fontWeight: 600 }}>8.7/10</span>
+                </div>
+              </div>
+
+              <div style={{ marginTop: 14, padding: '10px 16px', background: 'var(--yellow-15)', borderRadius: 'var(--rm)', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--yellow)' }}>
+                <Icon name="alert-circle" size={16} /> Найден потенциальный секрет в config.py
+              </div>
+            </Card>
+          )}
+
+          {tab === 'doc' && (
+            <Card style={{ animation: 'fadeIn .2s ease' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <span style={{ fontSize: 14, fontWeight: 600 }}>Автоматическая оценка</span>
+                <span style={{ fontSize: 22, fontWeight: 700, fontFamily: 'var(--fh)', color: 'var(--accent-l)' }}>8.5 <span style={{ fontSize: 14, color: 'var(--t3)', fontWeight: 400 }}>/ 10</span></span>
+              </div>
+              <ProgressBar value={85} color="var(--green)" height={8} style={{ marginBottom: 20 }} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
+                {['Описание системы', 'Инструкция развёртывания', 'Руководство использования'].map(s => (
+                  <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--green)' }}><Icon name="check" size={14} /> Раздел «{s}» найден</div>
+                ))}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ padding: '12px', background: 'var(--bg)', borderRadius: 'var(--rm)', textAlign: 'center' }}>
+                  <div style={{ fontSize: 18, fontWeight: 700, fontFamily: 'var(--fh)' }}>4,830</div>
+                  <div style={{ fontSize: 11, color: 'var(--t3)', marginTop: 2 }}>Символов</div>
+                </div>
+                <div style={{ padding: '12px', background: 'var(--bg)', borderRadius: 'var(--rm)', textAlign: 'center' }}>
+                  <div style={{ fontSize: 18, fontWeight: 700, fontFamily: 'var(--fh)' }}>3</div>
+                  <div style={{ fontSize: 11, color: 'var(--t3)', marginTop: 2 }}>Изображения</div>
+                </div>
+              </div>
+              <Button variant="secondary" size="sm" icon="download" style={{ marginTop: 16 }}>Скачать documentation.pdf (2.3 MB)</Button>
+            </Card>
+          )}
+
+          {tab === 'pres' && (
+            <Card style={{ animation: 'fadeIn .2s ease' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <span style={{ fontSize: 14, fontWeight: 600 }}>Автоматическая оценка</span>
+                <span style={{ fontSize: 22, fontWeight: 700, fontFamily: 'var(--fh)', color: 'var(--accent-l)' }}>7.0 <span style={{ fontSize: 14, color: 'var(--t3)', fontWeight: 400 }}>/ 10</span></span>
+              </div>
+              <ProgressBar value={70} color="var(--accent)" height={8} style={{ marginBottom: 20 }} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+                <div style={{ padding: '12px', background: 'var(--bg)', borderRadius: 'var(--rm)', textAlign: 'center' }}>
+                  <div style={{ fontSize: 18, fontWeight: 700, fontFamily: 'var(--fh)' }}>12</div>
+                  <div style={{ fontSize: 11, color: 'var(--t3)' }}>Слайдов</div>
+                </div>
+                <div style={{ padding: '12px', background: 'var(--bg)', borderRadius: 'var(--rm)', textAlign: 'center' }}>
+                  <div style={{ fontSize: 18, fontWeight: 700, fontFamily: 'var(--fh)', color: 'var(--green)' }}>4/6</div>
+                  <div style={{ fontSize: 11, color: 'var(--t3)' }}>Разделов</div>
+                </div>
+                <div style={{ padding: '12px', background: 'var(--bg)', borderRadius: 'var(--rm)', textAlign: 'center' }}>
+                  <div style={{ fontSize: 18, fontWeight: 700, fontFamily: 'var(--fh)', color: 'var(--green)' }}>Да</div>
+                  <div style={{ fontSize: 11, color: 'var(--t3)' }}>Визуал</div>
+                </div>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 8 }}>Найденные разделы</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {['Проблема', 'Решение', 'Стек', 'Демо'].map(s => <Badge key={s} variant="success">{s}</Badge>)}
+                {['ЦА', 'Команда'].map(s => <Badge key={s} variant="error">{s}</Badge>)}
+              </div>
+              <Button variant="secondary" size="sm" icon="download" style={{ marginTop: 16 }}>Скачать presentation.pptx</Button>
+            </Card>
+          )}
+
+          {tab === 'video' && (
+            <Card style={{ animation: 'fadeIn .2s ease' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <span style={{ fontSize: 14, fontWeight: 600 }}>Автоматическая оценка</span>
+                <span style={{ fontSize: 22, fontWeight: 700, fontFamily: 'var(--fh)', color: 'var(--accent-l)' }}>8.0 <span style={{ fontSize: 14, color: 'var(--t3)', fontWeight: 400 }}>/ 10</span></span>
+              </div>
+              <ProgressBar value={80} color="var(--green)" height={8} style={{ marginBottom: 20 }} />
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 20 }}>
+                {[{ label: 'Длительность', value: '4:23' }, { label: 'Разрешение', value: '1920×1080' }, { label: 'Аудио', value: 'Да' }].map(m => (
+                  <div key={m.label} style={{ padding: '12px', background: 'var(--bg)', borderRadius: 'var(--rm)', textAlign: 'center' }}>
+                    <div style={{ fontSize: 16, fontWeight: 700, fontFamily: 'var(--fh)' }}>{m.value}</div>
+                    <div style={{ fontSize: 11, color: 'var(--t3)', marginTop: 2 }}>{m.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ width: '100%', aspectRatio: '16/9', background: 'var(--bg)', borderRadius: 'var(--rl)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20, cursor: 'pointer' }}>
+                <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--accent-15)', border: '2px solid var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon name="play" size={24} style={{ color: 'var(--accent-l)', marginLeft: 3 }} />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Транскрипция</div>
+                <div style={{ maxHeight: 150, overflow: 'auto', padding: '12px 16px', background: 'var(--bg)', borderRadius: 'var(--rm)', border: '1px solid var(--border)', fontSize: 13, color: 'var(--t2)', lineHeight: 1.6 }}>
+                  Добрый день, мы команда SuperCoders. Сегодня мы представляем наше решение для автоматизации процесса оценки хакатонов. Наша платформа позволяет автоматически проверять код, документацию, презентации и скринкасты. Мы использовали FastAPI на бэкенде и React на фронтенде...
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Саммари (AI)</div>
+                <div style={{ padding: '12px 16px', background: 'var(--accent-10)', borderRadius: 'var(--rm)', border: '1px solid rgba(99,102,241,.15)', fontSize: 13, color: 'var(--t2)', lineHeight: 1.6 }}>
+                  <Icon name="zap" size={14} style={{ color: 'var(--accent-l)', verticalAlign: 'middle', marginRight: 6 }} />
+                  Команда демонстрирует веб-приложение с автоматическими проверками кода (pylint, radon), документации (поиск обязательных разделов), презентации (анализ структуры) и скринкастов (транскрипция через Whisper). Показан процесс загрузки решения и получения мгновенной обратной связи.
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {tab === 'algo' && (
+            <Card style={{ animation: 'fadeIn .2s ease' }}>
+              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Результаты алгоритмических задач</div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead><tr style={{ borderBottom: '1px solid var(--border)' }}>
+                  {['Задача', 'Лучший вердикт', 'Попыток', 'Время'].map(h => <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontSize: 12, fontWeight: 500, color: 'var(--t3)' }}>{h}</th>)}
+                </tr></thead>
+                <tbody>
+                  {[
+                    { task: 'Сумма двух чисел', verdict: 'OK', attempts: 3, time: '45 мс', color: 'success' },
+                    { task: 'Палиндром', verdict: 'WA', attempts: 2, time: '—', color: 'error' },
+                    { task: 'Кратчайший путь', verdict: '—', attempts: 0, time: '—', color: 'default' },
+                  ].map((t, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '10px 12px', fontWeight: 500 }}>{t.task}</td>
+                      <td style={{ padding: '10px 12px' }}><Badge variant={t.color}>{t.verdict}</Badge></td>
+                      <td style={{ padding: '10px 12px', color: 'var(--t3)' }}>{t.attempts}</td>
+                      <td style={{ padding: '10px 12px', fontFamily: 'var(--fm)', fontSize: 12, color: 'var(--t3)' }}>{t.time}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          )}
+        </div>
+
+        {/* Right — Scoring panel (sticky) */}
+        <div style={{ position: 'sticky', top: 'calc(var(--hdr) + 28px)' }}>
+          <Card glow>
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Экспертная оценка</h3>
+            <p style={{ fontSize: 12, color: 'var(--t3)', marginBottom: 20 }}>Оцените решение по экспертным критериям</p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {criteriaList.map(c => (
+                <div key={c.key}>
+                  <ScoreSlider label={`${c.name} (${c.weight})`} value={scores[c.key]} onChange={v => { setScores({ ...scores, [c.key]: v }); setSaved(false); }} />
+                  <textarea placeholder="Комментарий (необязательно)" value={comments[c.key]} onChange={e => { setComments({ ...comments, [c.key]: e.target.value }); setSaved(false); }} rows={2}
+                    style={{ width: '100%', marginTop: 8, padding: '8px 12px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--rs)', color: 'var(--t1)', fontSize: 12, fontFamily: 'var(--fb)', resize: 'vertical', outline: 'none' }} />
+                </div>
+              ))}
+            </div>
+
+            <Button fullWidth icon="save" onClick={() => setSaved(true)} style={{ marginTop: 20 }}>
+              Сохранить оценки
+            </Button>
+
+            {saved && (
+              <div style={{ marginTop: 12, padding: '10px 14px', background: 'var(--green-15)', borderRadius: 'var(--rs)', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--green)', animation: 'fadeIn .2s ease' }}>
+                <Icon name="check" size={14} /> Оценки сохранены
+              </div>
+            )}
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { ReviewListPage, ReviewDetailPage });
+
+  </script>
+
+  <script type="text/babel">
+const { useState, Fragment } = React;
+
+// ══════════════════════════════════════════════
+// HACKATHON MANAGE (Organizer)
+// ══════════════════════════════════════════════
+function HackathonManagePage() {
+  const [status, setStatus] = useState('in_progress');
+  const statuses = ['draft','registration','in_progress','judging','finished'];
+
+  return (
+    <div>
+      <PageHeader title="Управление хакатоном" subtitle="Чемпионат по продуктовому программированию 2026" />
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
+        <StatCard value="15" label="Команд" icon="users" color="var(--accent-l)" />
+        <StatCard value="47" label="Участников" icon="user" color="var(--cyan)" />
+        <StatCard value="12" label="Решений" icon="upload" color="var(--green)" />
+        <StatCard value="3" label="Жюри" icon="star" color="var(--yellow)" />
+      </div>
+
+      <Card style={{ marginBottom: 20 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>Статус хакатона</h3>
+        <div style={{ display: 'flex', gap: 0, alignItems: 'center' }}>
+          {statuses.map((s, i) => {
+            const idx = statuses.indexOf(status);
+            const done = i < idx; const active = i === idx; const future = i > idx;
+            return (
+              <Fragment key={s}>
+                <div onClick={() => setStatus(s)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: 'pointer', flex: 1 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: done ? 'var(--green)' : active ? 'var(--accent)' : 'var(--border)', color: '#fff', fontSize: 13, fontWeight: 600, transition: 'all var(--tr)',
+                    boxShadow: active ? '0 0 16px rgba(99,102,241,.4)' : 'none' }}>
+                    {done ? <Icon name="check" size={16} /> : i + 1}
+                  </div>
+                  <span style={{ fontSize: 11, fontWeight: active ? 600 : 400, color: active ? 'var(--accent-l)' : done ? 'var(--green)' : 'var(--t3)', textAlign: 'center' }}>
+                    {STATUS_LABELS[s]}
+                  </span>
+                </div>
+                {i < statuses.length - 1 && <div style={{ flex: '0 0 40px', height: 2, background: done ? 'var(--green)' : 'var(--border)', marginTop: -20, borderRadius: 1 }} />}
+              </Fragment>
+            );
+          })}
+        </div>
+      </Card>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+        <Card>
+          <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>Настройки хакатона</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <Input label="Название" value="Чемпионат по продуктовому программированию 2026" />
+            <Textarea label="Описание" value="Автоматическая оценка решений команд с использованием статического анализа кода, проверки документации и презентаций." rows={3} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <Input label="Начало" type="date" value="2026-06-01" />
+              <Input label="Завершение" type="date" value="2026-06-07" />
+            </div>
+            <Input label="Макс. участников в команде" type="number" value="5" />
+          </div>
+          <Button icon="save" style={{ marginTop: 16 }}>Сохранить настройки</Button>
+        </Card>
+
+        <Card>
+          <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>Быстрые действия</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {[
+              { icon: 'play', label: 'Запустить автопроверку всех решений', desc: 'Проверить код, документы, презентации', variant: 'primary' },
+              { icon: 'bar-chart', label: 'Пересчитать лидерборд', desc: 'Обновить итоговые баллы', variant: 'secondary' },
+              { icon: 'download', label: 'Экспорт результатов', desc: 'Скачать CSV/JSON отчёт', variant: 'secondary' },
+              { icon: 'send', label: 'Уведомить участников', desc: 'Отправить email-рассылку', variant: 'secondary' },
+            ].map((a, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: 'var(--bg)', borderRadius: 'var(--rm)', border: '1px solid var(--border)', cursor: 'pointer', transition: 'all var(--fast)' }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--t3)'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}>
+                <div style={{ width: 40, height: 40, borderRadius: 'var(--rm)', background: i === 0 ? 'var(--accent-15)' : 'var(--card)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon name={a.icon} size={20} style={{ color: i === 0 ? 'var(--accent-l)' : 'var(--t2)' }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>{a.label}</div>
+                  <div style={{ fontSize: 11, color: 'var(--t3)' }}>{a.desc}</div>
+                </div>
+                <Icon name="chevron-right" size={16} style={{ color: 'var(--t3)' }} />
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════
+// CRITERIA MANAGEMENT
+// ══════════════════════════════════════════════
+function CriteriaPage() {
+  const [criteria, setCriteria] = useState([
+    { id: 1, name: 'Полнота MVP', type: 'auto', weight: 20, description: 'Наличие всех заявленных функций' },
+    { id: 2, name: 'Качество автопроверок', type: 'expert', weight: 15, description: 'Глубина и точность автоматических проверок' },
+    { id: 3, name: 'Алгоритмический модуль', type: 'expert', weight: 10, description: 'Корректность решения алгоритмических задач' },
+    { id: 4, name: 'Архитектура и качество кода', type: 'auto', weight: 10, description: 'Структура, читаемость, линтер' },
+    { id: 5, name: 'UX/UI', type: 'expert', weight: 10, description: 'Дизайн и удобство интерфейса' },
+    { id: 6, name: 'Работоспособность стенда', type: 'expert', weight: 10, description: 'Деплой и работа приложения' },
+    { id: 7, name: 'Документация', type: 'auto', weight: 7, description: 'Полнота технической документации' },
+    { id: 8, name: 'Презентация и скринкаст', type: 'auto', weight: 6, description: 'Качество презентации и демо' },
+    { id: 9, name: 'Инновационность', type: 'expert', weight: 6, description: 'Оригинальность и креативность решения' },
+    { id: 10, name: 'Очная защита', type: 'expert', weight: 6, description: 'Качество защиты перед жюри' },
+  ]);
+  const totalW = criteria.reduce((s, c) => s + c.weight, 0);
+
+  return (
+    <div>
+      <PageHeader title="Критерии оценки" subtitle="Настройте веса и описания критериев" actionLabel="Добавить критерий" actionIcon="plus" />
+
+      <Card style={{ marginBottom: 20, padding: '14px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', gap: 24 }}>
+            <span style={{ fontSize: 13, color: 'var(--t3)' }}>Всего критериев: <span style={{ fontWeight: 600, color: 'var(--t1)' }}>{criteria.length}</span></span>
+            <span style={{ fontSize: 13, color: 'var(--t3)' }}>Сумма весов: <span style={{ fontWeight: 600, color: totalW === 100 ? 'var(--green)' : 'var(--red)' }}>{totalW}%</span></span>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Badge variant="cyan">Авто: {criteria.filter(c => c.type === 'auto').length}</Badge>
+            <Badge variant="purple">Эксперт: {criteria.filter(c => c.type === 'expert').length}</Badge>
+          </div>
+        </div>
+      </Card>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {criteria.map((c, i) => (
+          <Card key={c.id} style={{ padding: '16px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div style={{ color: 'var(--t4)', cursor: 'grab' }}><Icon name="grip-vertical" size={16} /></div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>{c.name}</span>
+                  <Badge variant={c.type === 'auto' ? 'cyan' : 'purple'}>{c.type === 'auto' ? 'Авто' : 'Эксперт'}</Badge>
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--t3)' }}>{c.description}</div>
+              </div>
+              <div style={{ textAlign: 'center', minWidth: 60 }}>
+                <div style={{ fontSize: 22, fontWeight: 700, fontFamily: 'var(--fh)', color: 'var(--accent-l)' }}>{c.weight}%</div>
+                <div style={{ fontSize: 10, color: 'var(--t3)' }}>вес</div>
+              </div>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <Button variant="ghost" size="sm" icon="edit" />
+                <Button variant="ghost" size="sm" icon="trash" />
+              </div>
+            </div>
+            <ProgressBar value={c.weight} color="var(--accent)" height={3} style={{ marginTop: 10 }} />
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════
+// TEAMS OVERVIEW (Organizer)
+// ══════════════════════════════════════════════
+function TeamsOverviewPage() {
+  const teams = [
+    { id: 1, name: 'SuperCoders', members: 3, max: 5, submitted: true, autoScore: 8.2, juryScore: 7.5, status: 'scored' },
+    { id: 2, name: 'CodeNinjas', members: 4, max: 5, submitted: true, autoScore: null, juryScore: null, status: 'checking' },
+    { id: 3, name: 'ByteForce', members: 2, max: 5, submitted: true, autoScore: 6.8, juryScore: null, status: 'pending_jury' },
+    { id: 4, name: 'TeamAlpha', members: 5, max: 5, submitted: true, autoScore: 7.1, juryScore: 6.5, status: 'scored' },
+    { id: 5, name: 'DataWizards', members: 3, max: 5, submitted: false, autoScore: null, juryScore: null, status: 'no_submit' },
+  ];
+  const statusMap = { scored: { label: 'Оценена', variant: 'success' }, checking: { label: 'Проверяется', variant: 'warning' }, pending_jury: { label: 'Ждёт жюри', variant: 'info' }, no_submit: { label: 'Нет решения', variant: 'default' } };
+
+  return (
+    <div>
+      <PageHeader title="Команды" subtitle="15 команд · 47 участников" />
+      <Card style={{ padding: 0 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead><tr style={{ borderBottom: '1px solid var(--border)' }}>
+            {['#', 'Команда', 'Участники', 'Решение', 'Авто', 'Жюри', 'Статус'].map(h => (
+              <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 500, color: 'var(--t3)' }}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
+            {teams.map(t => {
+              const st = statusMap[t.status];
+              return (
+                <tr key={t.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background var(--fast)' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--card-h)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                  <td style={{ padding: '14px 16px', color: 'var(--t3)', fontFamily: 'var(--fh)' }}>{t.id}</td>
+                  <td style={{ padding: '14px 16px', fontWeight: 500 }}>{t.name}</td>
+                  <td style={{ padding: '14px 16px', color: 'var(--t2)' }}>{t.members}/{t.max}</td>
+                  <td style={{ padding: '14px 16px' }}>{t.submitted ? <Badge variant="success" dot>Есть</Badge> : <Badge variant="default">—</Badge>}</td>
+                  <td style={{ padding: '14px 16px', fontFamily: 'var(--fh)', fontWeight: 600 }}>{t.autoScore?.toFixed(1) || <span style={{ color: 'var(--t4)' }}>—</span>}</td>
+                  <td style={{ padding: '14px 16px', fontFamily: 'var(--fh)', fontWeight: 600, color: 'var(--accent-l)' }}>{t.juryScore?.toFixed(1) || <span style={{ color: 'var(--t4)' }}>—</span>}</td>
+                  <td style={{ padding: '14px 16px' }}><Badge variant={st.variant} dot pulse={t.status === 'checking'}>{st.label}</Badge></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════
+// ALGO MANAGE (Organizer)
+// ══════════════════════════════════════════════
+function AlgoManagePage() {
+  const [showModal, setShowModal] = useState(false);
+  const tasks = [
+    { id: 1, title: 'Сумма двух чисел', tl: 1000, ml: 256, tests: 10, solved: '12/15' },
+    { id: 2, title: 'Палиндром', tl: 1000, ml: 256, tests: 15, solved: '8/15' },
+    { id: 3, title: 'Кратчайший путь', tl: 2000, ml: 512, tests: 20, solved: '3/15' },
+    { id: 4, title: 'Максимальный подмассив', tl: 1500, ml: 256, tests: 12, solved: '6/15' },
+    { id: 5, title: 'Скобочная последовательность', tl: 1000, ml: 256, tests: 18, solved: '5/15' },
+  ];
+
+  return (
+    <div>
+      <PageHeader title="Алгоритмические задачи" subtitle="Управление задачами и тестами" actionLabel="Добавить задачу" actionIcon="plus" onAction={() => setShowModal(true)} />
+
+      <Card style={{ padding: 0 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead><tr style={{ borderBottom: '1px solid var(--border)' }}>
+            {['#', 'Название', 'TL', 'ML', 'Тестов', 'Решено', 'Действия'].map(h => (
+              <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 500, color: 'var(--t3)' }}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
+            {tasks.map(t => (
+              <tr key={t.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                <td style={{ padding: '12px 16px', color: 'var(--t3)', fontFamily: 'var(--fh)' }}>{t.id}</td>
+                <td style={{ padding: '12px 16px', fontWeight: 500 }}>{t.title}</td>
+                <td style={{ padding: '12px 16px', fontFamily: 'var(--fm)', fontSize: 12, color: 'var(--t2)' }}>{t.tl} мс</td>
+                <td style={{ padding: '12px 16px', fontFamily: 'var(--fm)', fontSize: 12, color: 'var(--t2)' }}>{t.ml} МБ</td>
+                <td style={{ padding: '12px 16px', color: 'var(--t2)' }}>{t.tests}</td>
+                <td style={{ padding: '12px 16px' }}><Badge variant="info">{t.solved}</Badge></td>
+                <td style={{ padding: '12px 16px' }}>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <Button variant="ghost" size="sm" icon="edit" />
+                    <Button variant="ghost" size="sm" icon="trash" />
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Новая задача" width={560}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <Input label="Название задачи" placeholder="Например: Сумма двух чисел" />
+          <Textarea label="Условие задачи (Markdown)" placeholder="Опишите задачу..." rows={5} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <Input label="Лимит времени (мс)" type="number" value="1000" />
+            <Input label="Лимит памяти (МБ)" type="number" value="256" />
+          </div>
+          <FileUpload label="Тесты (ZIP-архив)" description="Пары файлов input01.txt / output01.txt" accept=".zip" />
+          <Button fullWidth icon="plus" onClick={() => setShowModal(false)}>Создать задачу</Button>
+        </div>
+      </Modal>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════
+// LEADERBOARD
+// ══════════════════════════════════════════════
+function LeaderboardPage() {
+  const teams = [
+    { rank: 1, name: 'SuperCoders', auto: 8.2, jury: 7.8, algo: 9.0, total: 7.95, medal: 'gold' },
+    { rank: 2, name: 'TeamAlpha', auto: 7.1, jury: 8.0, algo: 7.5, total: 7.45, medal: 'silver' },
+    { rank: 3, name: 'ByteForce', auto: 6.8, jury: 7.2, algo: 8.0, total: 7.02, medal: 'bronze' },
+    { rank: 4, name: 'PixelPioneers', auto: 7.8, jury: 6.0, algo: 6.5, total: 6.88 },
+    { rank: 5, name: 'DataWizards', auto: 5.9, jury: 7.0, algo: 7.0, total: 6.35 },
+    { rank: 6, name: 'CodeNinjas', auto: 6.2, jury: 5.5, algo: 8.5, total: 6.22 },
+  ];
+  const medalColors = { gold: 'var(--gold)', silver: 'var(--silver)', bronze: 'var(--bronze)' };
+
+  return (
+    <div>
+      <PageHeader title="Лидерборд" subtitle="Итоговый рейтинг команд">
+        <Button variant="secondary" size="sm" icon="download">Экспорт</Button>
+      </PageHeader>
+
+      {/* Top 3 podium */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 24 }}>
+        {[teams[1], teams[0], teams[2]].map((t, i) => {
+          const isFirst = i === 1;
+          const medalColor = medalColors[t.medal];
+          return (
+            <Card key={t.rank} glow={isFirst} style={{ textAlign: 'center', padding: '28px 20px', marginTop: isFirst ? 0 : 24, border: isFirst ? '1px solid var(--accent)' : undefined }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>
+                {t.medal === 'gold' && <Icon name="trophy" size={36} style={{ color: 'var(--gold)' }} />}
+                {t.medal === 'silver' && <Icon name="trophy" size={30} style={{ color: 'var(--silver)' }} />}
+                {t.medal === 'bronze' && <Icon name="trophy" size={28} style={{ color: 'var(--bronze)' }} />}
+              </div>
+              <div style={{ width: 48, height: 48, borderRadius: '50%', background: medalColor || 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: 20, fontWeight: 700, fontFamily: 'var(--fh)', color: '#fff' }}>
+                {t.rank}
+              </div>
+              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>{t.name}</h3>
+              <div style={{ fontSize: 28, fontWeight: 700, fontFamily: 'var(--fh)', color: medalColor || 'var(--t1)' }}>{t.total.toFixed(2)}</div>
+              <div style={{ fontSize: 12, color: 'var(--t3)', marginTop: 4 }}>баллов</div>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Full table */}
+      <Card style={{ padding: 0 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead><tr style={{ borderBottom: '1px solid var(--border)' }}>
+            {['Место', 'Команда', 'Авто-оценка', 'Жюри', 'Алгоритмы', 'Итого'].map(h => (
+              <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 500, color: 'var(--t3)' }}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
+            {teams.map(t => (
+              <tr key={t.rank} style={{ borderBottom: '1px solid var(--border)', background: t.medal ? `color-mix(in srgb, ${medalColors[t.medal]} 5%, transparent)` : 'transparent' }}>
+                <td style={{ padding: '14px 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {t.medal && <div style={{ width: 24, height: 24, borderRadius: '50%', background: medalColors[t.medal], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff' }}>{t.rank}</div>}
+                    {!t.medal && <span style={{ fontFamily: 'var(--fh)', fontWeight: 600, color: 'var(--t3)', width: 24, textAlign: 'center', display: 'inline-block' }}>{t.rank}</span>}
+                  </div>
+                </td>
+                <td style={{ padding: '14px 16px', fontWeight: 600 }}>{t.name}</td>
+                <td style={{ padding: '14px 16px', fontFamily: 'var(--fh)' }}>{t.auto.toFixed(1)}</td>
+                <td style={{ padding: '14px 16px', fontFamily: 'var(--fh)' }}>{t.jury.toFixed(1)}</td>
+                <td style={{ padding: '14px 16px', fontFamily: 'var(--fh)' }}>{t.algo.toFixed(1)}</td>
+                <td style={{ padding: '14px 16px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: 15, color: t.medal ? medalColors[t.medal] : 'var(--accent-l)' }}>
+                  {t.total.toFixed(2)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  );
+}
+
+Object.assign(window, { HackathonManagePage, CriteriaPage, TeamsOverviewPage, AlgoManagePage, LeaderboardPage });
+
+  </script>
+
+  <script type="text/babel">
+const { useState, useEffect } = React;
+
+    const DEMO_USERS = {
+      'team1@hackscore.ru':   { name: 'Иван Петров', email: 'team1@hackscore.ru', role: 'participant' },
+      'jury1@hackscore.ru':   { name: 'Анна Кузнецова', email: 'jury1@hackscore.ru', role: 'jury' },
+      'admin@hackscore.ru':   { name: 'Сергей Волков', email: 'admin@hackscore.ru', role: 'organizer' },
+    };
+
+    const DEFAULT_PAGES = { participant: 'hackathons', jury: 'reviews', organizer: 'hackathon-manage' };
+
+    function App() {
+      const [authView, setAuthView] = useState('login'); // 'login' | 'register'
+      const [user, setUser] = useState(null);
+      const [role, setRole] = useState('participant');
+      const [page, setPage] = useState('hackathons');
+      const toast = useToast();
+
+      // Restore session
+      useEffect(() => {
+        const saved = localStorage.getItem('hs_user');
+        if (saved) {
+          try {
+            const d = JSON.parse(saved);
+            setUser(d.user);
+            setRole(d.role);
+            setPage(d.page || DEFAULT_PAGES[d.role]);
+          } catch(e) {}
+        }
+      }, []);
+
+      // Persist session
+      useEffect(() => {
+        if (user) localStorage.setItem('hs_user', JSON.stringify({ user, role, page }));
+      }, [user, role, page]);
+
+      const handleLogin = ({ email }) => {
+        const u = DEMO_USERS[email] || { name: email.split('@')[0], email, role: 'participant' };
+        setUser(u);
+        setRole(u.role);
+        setPage(DEFAULT_PAGES[u.role]);
+        toast?.success?.('Добро пожаловать, ' + u.name + '!');
+      };
+
+      const handleRegister = ({ name, email, role: r }) => {
+        const u = { name: name || 'Пользователь', email, role: r || 'participant' };
+        setUser(u);
+        setRole(u.role);
+        setPage(DEFAULT_PAGES[u.role]);
+        toast?.success?.('Аккаунт создан!');
+      };
+
+      const handleLogout = () => {
+        setUser(null);
+        setAuthView('login');
+        localStorage.removeItem('hs_user');
+      };
+
+      const handleRoleSwitch = (r) => {
+        setRole(r);
+        setPage(DEFAULT_PAGES[r]);
+      };
+
+      const navigate = (p) => setPage(p);
+
+      // ── Auth screens ──
+      if (!user) {
+        if (authView === 'register') return <RegisterPage onRegister={handleRegister} onSwitch={() => setAuthView('login')} />;
+        return <LoginPage onLogin={handleLogin} onSwitch={() => setAuthView('register')} />;
+      }
+
+      // ── Page router ──
+      const renderPage = () => {
+        switch (page) {
+          // Participant
+          case 'hackathons':    return <HackathonListPage onNavigate={navigate} />;
+          case 'team':          return <TeamPage />;
+          case 'submission':    return <SubmissionPage />;
+          case 'results':       return <ResultsPage />;
+          case 'algo':          return <AlgoTasksPage onNavigate={navigate} />;
+          case 'algo-results':  return <AlgoTasksPage onNavigate={navigate} />;
+          case 'algo-detail':   return <AlgoTaskDetailPage onBack={navigate} />;
+          // Jury
+          case 'reviews':       return <ReviewListPage onNavigate={navigate} />;
+          case 'review-detail': return <ReviewDetailPage onBack={navigate} />;
+          case 'my-scores':     return <ReviewListPage onNavigate={navigate} />;
+          // Organizer
+          case 'hackathon-manage': return <HackathonManagePage />;
+          case 'criteria':         return <CriteriaPage />;
+          case 'teams-overview':   return <TeamsOverviewPage />;
+          case 'algo-manage':      return <AlgoManagePage />;
+          case 'algo-results-org': return <AlgoManagePage />;
+          case 'export':           return <LeaderboardPage />;
+          // Shared
+          case 'leaderboard':      return <LeaderboardPage />;
+          default:                 return <EmptyState icon="search" title="Страница не найдена" description="Выберите пункт в боковом меню" />;
+        }
+      };
+
+      return (
+        <AppLayout role={role} activePage={page} onNavigate={navigate} user={user} onRoleSwitch={handleRoleSwitch} onLogout={handleLogout}>
+          {renderPage()}
+        </AppLayout>
+      );
+    }
+
+    function Root() {
+      return (
+        <ToastProvider>
+          <App />
+        </ToastProvider>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
+  </script>
+</body>
+</html>
