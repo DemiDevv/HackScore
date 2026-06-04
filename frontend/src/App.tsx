@@ -9,6 +9,11 @@ import { PlaceholderPage } from "./pages/common/PlaceholderPage";
 import { JuryLeaderboardPage } from "./pages/jury/JuryLeaderboardPage";
 import { ReviewDetailPage } from "./pages/jury/ReviewDetailPage";
 import { ReviewListPage } from "./pages/jury/ReviewListPage";
+import { AlgoManagePage } from "./pages/organizer/AlgoManagePage";
+import { CriteriaPage } from "./pages/organizer/CriteriaPage";
+import { HackathonManagePage } from "./pages/organizer/HackathonManagePage";
+import { OrganizerLeaderboardPage } from "./pages/organizer/OrganizerLeaderboardPage";
+import { TeamsOverviewPage } from "./pages/organizer/TeamsOverviewPage";
 import { AlgoTasksPage } from "./pages/participant/AlgoTasksPage";
 import { HackathonListPage } from "./pages/participant/HackathonListPage";
 import { ResultsPage } from "./pages/participant/ResultsPage";
@@ -42,11 +47,11 @@ function App() {
 
         <Route element={<ProtectedRoute roles={["organizer"]} />}>
           <Route element={<AppLayout />}>
-            <Route element={<PlaceholderPage description="Настройки хакатона, даты и смена статуса." title="Управление хакатоном" />} path="/organizer/hackathon" />
-            <Route element={<PlaceholderPage description="Критерии, веса, типы автопроверок и экспертных оценок." title="Критерии оценки" />} path="/organizer/criteria" />
-            <Route element={<PlaceholderPage description="Список команд, участники и прогресс решений." title="Команды" />} path="/organizer/teams" />
-            <Route element={<PlaceholderPage description="Создание задач, тесты и результаты попыток." title="Алго-задачи" />} path="/organizer/algo" />
-            <Route element={<PlaceholderPage description="Финальная таблица результатов и экспорт CSV." title="Лидерборд" />} path="/organizer/leaderboard" />
+            <Route element={<HackathonManagePage />} path="/organizer/hackathon" />
+            <Route element={<CriteriaPage />} path="/organizer/criteria" />
+            <Route element={<TeamsOverviewPage />} path="/organizer/teams" />
+            <Route element={<AlgoManagePage />} path="/organizer/algo" />
+            <Route element={<OrganizerLeaderboardPage />} path="/organizer/leaderboard" />
           </Route>
         </Route>
 
