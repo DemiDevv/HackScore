@@ -20,4 +20,5 @@ celery_app.conf.update(
 import app.workers.code_analyzer  # noqa: E402,F401
 import app.workers.doc_validator  # noqa: E402,F401
 import app.workers.presentation_checker  # noqa: E402,F401
+import app.workers.sandbox_runner  # noqa: E402,F401
 import app.workers.video_processor  # noqa: E402,F401
