@@ -39,6 +39,7 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       SECRET_KEY: ${SECRET_KEY:-change-me}
       UPLOAD_DIR: ${UPLOAD_DIR:-/app/uploads}
+      HACKSCORE_AUTO_SEED: ${HACKSCORE_AUTO_SEED:-true}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     volumes:
@@ -61,6 +62,7 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       SECRET_KEY: ${SECRET_KEY:-change-me}
       UPLOAD_DIR: ${UPLOAD_DIR:-/app/uploads}
+      HACKSCORE_AUTO_SEED: "false"
     command: celery -A app.workers.celery_app worker --loglevel=info
     volumes:
       - uploads_data:/app/uploads
