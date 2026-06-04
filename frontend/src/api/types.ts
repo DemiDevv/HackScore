@@ -114,3 +114,61 @@ export type AlgoSubmission = {
   error_message: string | null;
   submitted_at: string;
 };
+
+export type Criterion = {
+  id: string;
+  hackathon_id: string;
+  name: string;
+  description: string | null;
+  weight: number;
+  max_score: number;
+  is_auto: boolean;
+  order_index: number | null;
+};
+
+export type ExpertScore = {
+  id: string;
+  submission_id: string;
+  criterion_id: string;
+  jury_id: string;
+  score: number;
+  comment: string | null;
+  created_at: string;
+};
+
+export type ReviewSubmissionSummary = {
+  submission_id: string;
+  team_id: string;
+  team_name: string;
+  status: SubmissionStatus;
+  auto_score: number | null;
+  my_score: number | null;
+  checks: Array<{
+    check_type: CheckType;
+    status: CheckStatus;
+    score: number | null;
+  }>;
+};
+
+export type ReviewDetail = ReviewSubmissionSummary & {
+  repo_url: string | null;
+  repo_archive: string | null;
+  doc_file: string | null;
+  presentation: string | null;
+  screencast_file: string | null;
+  screencast_url: string | null;
+  my_scores: ExpertScore[];
+};
+
+export type LeaderboardRow = {
+  rank: number;
+  team_id: string;
+  team_name: string;
+  auto_scores: Record<string, number | null>;
+  expert_scores: Array<{
+    criterion: string;
+    avg_score: number | null;
+    jury_count: number;
+  }>;
+  total_score: number;
+};

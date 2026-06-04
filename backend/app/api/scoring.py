@@ -66,7 +66,7 @@ async def update_score(
 async def get_leaderboard(
     hackathon_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_role(UserRole.organizer))],
+    _: Annotated[User, Depends(require_role(UserRole.organizer, UserRole.jury))],
 ) -> list[LeaderboardRow]:
     return await scoring_service.get_leaderboard(db, hackathon_id)
 
@@ -75,7 +75,7 @@ async def get_leaderboard(
 async def export_leaderboard(
     hackathon_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_role(UserRole.organizer))],
+    _: Annotated[User, Depends(require_role(UserRole.organizer, UserRole.jury))],
 ) -> Response:
     rows = await scoring_service.get_leaderboard(db, hackathon_id)
     csv_body = scoring_service.leaderboard_to_csv(rows)

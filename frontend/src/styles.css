@@ -208,7 +208,8 @@
   }
 
   .plain-input,
-  .select {
+  .select,
+  .plain-textarea {
     min-height: 42px;
     width: 100%;
     border-radius: 8px;
@@ -219,10 +220,34 @@
     outline: 0;
   }
 
+  .plain-textarea {
+    min-height: 86px;
+    resize: vertical;
+    padding: 10px 12px;
+  }
+
   .plain-input:focus,
-  .select:focus {
+  .select:focus,
+  .plain-textarea:focus {
     border-color: #6366f1;
     box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+  }
+
+  .filter-pill {
+    min-height: 34px;
+    border-radius: 999px;
+    border: 1px solid #1e1e2e;
+    background: #12121a;
+    padding: 0 14px;
+    color: rgba(255, 255, 255, 0.64);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .filter-pill-active {
+    border-color: #6366f1;
+    background: rgba(99, 102, 241, 0.15);
+    color: #818cf8;
   }
 
   .badge {

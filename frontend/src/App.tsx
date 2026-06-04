@@ -6,6 +6,9 @@ import { ProtectedRoute } from "./components/layout/ProtectedRoute";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { RegisterPage } from "./pages/auth/RegisterPage";
 import { PlaceholderPage } from "./pages/common/PlaceholderPage";
+import { JuryLeaderboardPage } from "./pages/jury/JuryLeaderboardPage";
+import { ReviewDetailPage } from "./pages/jury/ReviewDetailPage";
+import { ReviewListPage } from "./pages/jury/ReviewListPage";
 import { AlgoTasksPage } from "./pages/participant/AlgoTasksPage";
 import { HackathonListPage } from "./pages/participant/HackathonListPage";
 import { ResultsPage } from "./pages/participant/ResultsPage";
@@ -31,8 +34,9 @@ function App() {
 
         <Route element={<ProtectedRoute roles={["jury"]} />}>
           <Route element={<AppLayout />}>
-            <Route element={<PlaceholderPage description="Таблица решений команд, фильтры и переход к оценке." title="Решения команд" />} path="/jury/reviews" />
-            <Route element={<PlaceholderPage description="Итоговая таблица команд по автоматическим и экспертным баллам." title="Лидерборд" />} path="/jury/leaderboard" />
+            <Route element={<ReviewListPage />} path="/jury/reviews" />
+            <Route element={<ReviewDetailPage />} path="/jury/reviews/:submissionId" />
+            <Route element={<JuryLeaderboardPage />} path="/jury/leaderboard" />
           </Route>
         </Route>
 
