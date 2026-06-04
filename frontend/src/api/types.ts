@@ -14,3 +14,103 @@ export type AuthResponse = {
   token_type: string;
   user: User;
 };
+
+export type HackathonStatus = "draft" | "registration" | "in_progress" | "judging" | "finished";
+
+export type Hackathon = {
+  id: string;
+  title: string;
+  description: string | null;
+  status: HackathonStatus;
+  start_date: string | null;
+  end_date: string | null;
+  created_by: string;
+  created_at: string;
+};
+
+export type TeamMember = {
+  id: string;
+  user_id: string;
+  email: string;
+  full_name: string;
+  role: UserRole;
+  is_captain: boolean;
+};
+
+export type Team = {
+  id: string;
+  name: string;
+  hackathon_id: string;
+  created_at: string;
+  members: TeamMember[];
+};
+
+export type CheckType = "code" | "documentation" | "presentation" | "screencast";
+export type CheckStatus = "pending" | "running" | "completed" | "failed";
+export type SubmissionStatus = "draft" | "submitted" | "checking" | "checked";
+
+export type CheckResult = {
+  id: string;
+  submission_id: string;
+  check_type: CheckType;
+  status: CheckStatus;
+  score: number | null;
+  report: Record<string, unknown> | null;
+  started_at: string | null;
+  completed_at: string | null;
+};
+
+export type Submission = {
+  id: string;
+  team_id: string;
+  hackathon_id: string;
+  repo_url: string | null;
+  repo_archive: string | null;
+  doc_file: string | null;
+  presentation: string | null;
+  screencast_file: string | null;
+  screencast_url: string | null;
+  status: SubmissionStatus;
+  submitted_at: string | null;
+  updated_at: string;
+  check_results: CheckResult[];
+};
+
+export type AlgoLanguage = "python" | "cpp" | "java";
+export type AlgoVerdict = "pending" | "OK" | "WA" | "TL" | "ML" | "RE" | "CE";
+
+export type AlgoTest = {
+  id: string;
+  task_id: string;
+  input_data: string;
+  expected_output: string;
+  is_sample: boolean;
+  order_index: number | null;
+};
+
+export type AlgoTask = {
+  id: string;
+  hackathon_id: string;
+  title: string;
+  description: string;
+  time_limit_ms: number;
+  memory_limit_mb: number;
+  created_by: string;
+  tests: AlgoTest[];
+};
+
+export type AlgoSubmission = {
+  id: string;
+  task_id: string;
+  user_id: string;
+  team_id: string;
+  language: AlgoLanguage;
+  source_code: string;
+  verdict: AlgoVerdict;
+  execution_time: number | null;
+  memory_used: number | null;
+  test_passed: number;
+  test_total: number;
+  error_message: string | null;
+  submitted_at: string;
+};

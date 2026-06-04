@@ -207,6 +207,98 @@
     color: #818cf8;
   }
 
+  .plain-input,
+  .select {
+    min-height: 42px;
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid #1e1e2e;
+    background: #0a0a0f;
+    padding: 0 12px;
+    color: #ffffff;
+    outline: 0;
+  }
+
+  .plain-input:focus,
+  .select:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+  }
+
+  .badge {
+    display: inline-flex;
+    min-height: 24px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: #1a1a28;
+    padding: 0 10px;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .task-row {
+    display: grid;
+    gap: 4px;
+    border-radius: 8px;
+    border: 1px solid #1e1e2e;
+    background: #0a0a0f;
+    padding: 12px;
+    text-align: left;
+  }
+
+  .task-row span {
+    font-weight: 700;
+  }
+
+  .task-row small {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .task-row-active {
+    border-color: #6366f1;
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+  }
+
+  .code-editor {
+    min-height: 360px;
+    width: 100%;
+    resize: vertical;
+    border-radius: 8px;
+    border: 1px solid #1e1e2e;
+    background: #0a0a0f;
+    padding: 14px;
+    color: #ffffff;
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    outline: 0;
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .data-table th,
+  .data-table td {
+    border-bottom: 1px solid #1e1e2e;
+    padding: 12px;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .data-table th {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
   .btn-primary,
   .btn-secondary {
     display: inline-flex;

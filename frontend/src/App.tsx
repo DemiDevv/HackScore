@@ -6,6 +6,11 @@ import { ProtectedRoute } from "./components/layout/ProtectedRoute";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { RegisterPage } from "./pages/auth/RegisterPage";
 import { PlaceholderPage } from "./pages/common/PlaceholderPage";
+import { AlgoTasksPage } from "./pages/participant/AlgoTasksPage";
+import { HackathonListPage } from "./pages/participant/HackathonListPage";
+import { ResultsPage } from "./pages/participant/ResultsPage";
+import { SubmissionPage } from "./pages/participant/SubmissionPage";
+import { TeamPage } from "./pages/participant/TeamPage";
 
 function App() {
   return (
@@ -16,11 +21,11 @@ function App() {
 
         <Route element={<ProtectedRoute roles={["participant"]} />}>
           <Route element={<AppLayout />}>
-            <Route element={<PlaceholderPage description="Список хакатонов участника, команды и статусы отправки решений." title="Мои хакатоны" />} path="/participant/hackathons" />
-            <Route element={<PlaceholderPage description="Команда, участники и приглашения по email." title="Моя команда" />} path="/participant/team" />
-            <Route element={<PlaceholderPage description="Загрузка репозитория, документации, презентации и скринкаста." title="Загрузка решения" />} path="/participant/submission" />
-            <Route element={<PlaceholderPage description="Автоматические проверки, экспертные критерии и итоговый балл." title="Результаты" />} path="/participant/results" />
-            <Route element={<PlaceholderPage description="Алгоритмические задачи, редактор кода и мои попытки." title="Алго-задачи" />} path="/participant/algo" />
+            <Route element={<HackathonListPage />} path="/participant/hackathons" />
+            <Route element={<TeamPage />} path="/participant/team" />
+            <Route element={<SubmissionPage />} path="/participant/submission" />
+            <Route element={<ResultsPage />} path="/participant/results" />
+            <Route element={<AlgoTasksPage />} path="/participant/algo" />
           </Route>
         </Route>
 
