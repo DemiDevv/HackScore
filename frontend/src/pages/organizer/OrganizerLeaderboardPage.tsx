@@ -31,13 +31,17 @@ export function OrganizerLeaderboardPage() {
     if (!hackathon) {
       return;
     }
-    const response = await api.get(`/scoring/hackathons/${hackathon.id}/leaderboard/export`, { responseType: "blob" });
-    const url = URL.createObjectURL(response.data);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "leaderboard.csv";
-    link.click();
-    URL.revokeObjectURL(url);
+    try {
+      const response = await api.get(`/scoring/hackathons/${hackathon.id}/leaderboard/export`, { responseType: "blob" });
+      const url = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "leaderboard.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Не удалось экспортировать CSV");
+    }
   }
 
   return (

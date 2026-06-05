@@ -33,7 +33,7 @@ export function ResultsPage() {
 
   const total = useMemo(() => {
     const scores = submission?.check_results.map((check) => check.score).filter((score): score is number => score !== null) ?? [];
-    return scores.length ? (scores.reduce((sum, score) => sum + score, 0) / scores.length).toFixed(2) : "0.00";
+    return scores.length ? (scores.reduce((sum, score) => sum + score, 0) / scores.length).toFixed(2) : "-";
   }, [submission]);
 
   return (

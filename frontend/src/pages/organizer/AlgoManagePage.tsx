@@ -19,13 +19,17 @@ export function AlgoManagePage() {
   }, []);
 
   async function load() {
-    const { data: hackathons } = await api.get<Hackathon[]>("/hackathons/");
-    const current = hackathons[0] ?? null;
-    setHackathon(current);
-    if (current) {
-      const { data } = await api.get<AlgoTask[]>(`/algo/tasks?hackathon_id=${current.id}`);
-      setTasks(data);
-      setSelectedTask(data[0] ?? null);
+    try {
+      const { data: hackathons } = await api.get<Hackathon[]>("/hackathons/");
+      const current = hackathons[0] ?? null;
+      setHackathon(current);
+      if (current) {
+        const { data } = await api.get<AlgoTask[]>(`/algo/tasks?hackathon_id=${current.id}`);
+        setTasks(data);
+        setSelectedTask(data[0] ?? null);
+      }
+    } catch {
+      toast.error("Не удалось загрузить задачи");
     }
   }
 

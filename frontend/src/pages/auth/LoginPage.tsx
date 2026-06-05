@@ -1,4 +1,4 @@
-import { Eye, Lock, Mail, Trophy } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, Trophy } from "lucide-react";
 import { FormEvent, useState } from "react";
 import type { ReactNode } from "react";
 import toast from "react-hot-toast";
@@ -7,17 +7,12 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { defaultRouteForRole } from "../../components/layout/ProtectedRoute";
 import { useAuthStore } from "../../store/authStore";
 
-const demoAccounts = [
-  { email: "team1@hackscore.ru", password: "team123", label: "Участник" },
-  { email: "jury1@hackscore.ru", password: "jury123", label: "Жюри" },
-  { email: "admin@hackscore.ru", password: "admin123", label: "Организатор" },
-];
-
 export function LoginPage() {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading, login, user } = useAuthStore();
-  const [email, setEmail] = useState("team1@hackscore.ru");
-  const [password, setPassword] = useState("team123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   if (isAuthenticated && user) {
     return <Navigate replace to={defaultRouteForRole(user.role)} />;
@@ -41,7 +36,7 @@ export function LoginPage() {
       <form className="auth-card" onSubmit={handleSubmit}>
         <div>
           <h1 className="font-display text-2xl font-bold">Вход в систему</h1>
-          <p className="mt-2 text-sm text-hs-t2">Используйте демо-аккаунт или свои учетные данные.</p>
+          <p className="mt-2 text-sm text-hs-t2">Введите свои учетные данные для входа.</p>
         </div>
 
         <label className="field">
@@ -56,31 +51,16 @@ export function LoginPage() {
           <span>Пароль</span>
           <div className="input-shell">
             <Lock className="size-4 text-hs-t3" />
-            <input autoComplete="current-password" onChange={(event) => setPassword(event.target.value)} type="password" value={password} />
-            <Eye className="size-4 text-hs-t3" />
+            <input autoComplete="current-password" onChange={(event) => setPassword(event.target.value)} type={showPassword ? "text" : "password"} value={password} />
+            <button className="text-hs-t3 hover:text-hs-t1 transition-colors" onClick={() => setShowPassword(!showPassword)} tabIndex={-1} type="button">
+              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
           </div>
         </label>
 
         <button className="btn-primary w-full" disabled={isLoading} type="submit">
           {isLoading ? "Вход..." : "Войти"}
         </button>
-
-        <div className="grid gap-2">
-          {demoAccounts.map((account) => (
-            <button
-              className="demo-account"
-              key={account.email}
-              onClick={() => {
-                setEmail(account.email);
-                setPassword(account.password);
-              }}
-              type="button"
-            >
-              <span>{account.label}</span>
-              <span>{account.email}</span>
-            </button>
-          ))}
-        </div>
 
         <p className="text-center text-sm text-hs-t2">
           Нет аккаунта?{" "}

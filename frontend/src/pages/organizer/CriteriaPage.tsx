@@ -19,12 +19,16 @@ export function CriteriaPage() {
   const totalWeight = useMemo(() => criteria.reduce((sum, criterion) => sum + criterion.weight, 0), [criteria]);
 
   async function load() {
-    const { data: hackathons } = await api.get<Hackathon[]>("/hackathons/");
-    const current = hackathons[0] ?? null;
-    setHackathon(current);
-    if (current) {
-      const { data } = await api.get<Criterion[]>(`/hackathons/${current.id}/criteria/`);
-      setCriteria(data);
+    try {
+      const { data: hackathons } = await api.get<Hackathon[]>("/hackathons/");
+      const current = hackathons[0] ?? null;
+      setHackathon(current);
+      if (current) {
+        const { data } = await api.get<Criterion[]>(`/hackathons/${current.id}/criteria/`);
+        setCriteria(data);
+      }
+    } catch {
+      toast.error("Не удалось загрузить критерии");
     }
   }
 

@@ -18,12 +18,16 @@ export function HackathonManagePage() {
   }, []);
 
   async function load() {
-    const { data } = await api.get<Hackathon[]>("/hackathons/");
-    setHackathons(data);
-    const first = data[0] ?? null;
-    setSelected(first);
-    setTitle(first?.title ?? "");
-    setDescription(first?.description ?? "");
+    try {
+      const { data } = await api.get<Hackathon[]>("/hackathons/");
+      setHackathons(data);
+      const first = data[0] ?? null;
+      setSelected(first);
+      setTitle(first?.title ?? "");
+      setDescription(first?.description ?? "");
+    } catch {
+      toast.error("Не удалось загрузить хакатоны");
+    }
   }
 
   async function save(event: FormEvent) {

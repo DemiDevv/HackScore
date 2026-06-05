@@ -23,7 +23,8 @@ async def register(
     payload: RegisterRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TokenResponse:
-    existing = await db.execute(select(User).where(User.email == payload.email))
+    email = payload.email.strip().lower()
+    existing = await db.execute(select(User).where(User.email == email))
     if existing.scalar_one_or_none() is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -31,7 +32,7 @@ async def register(
         )
 
     user = User(
-        email=payload.email,
+        email=email,
         password_hash=hash_password(payload.password),
         full_name=payload.full_name.strip(),
         role=payload.role,
@@ -48,7 +49,7 @@ async def login(
     payload: LoginRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TokenResponse:
-    result = await db.execute(select(User).where(User.email == payload.email))
+    result = await db.execute(select(User).where(User.email == payload.email.strip().lower()))
     user = result.scalar_one_or_none()
     if user is None or not verify_password(payload.password, user.password_hash):
         raise HTTPException(
