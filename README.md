@@ -59,5 +59,3 @@ cd frontend
 npm install
 npm run dev
 ```
-
-The original clickable design prototype remains in `prototype/HackScore.html`.
