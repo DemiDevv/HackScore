@@ -150,6 +150,21 @@ export type ReviewSubmissionSummary = {
   }>;
 };
 
+export type AIReview = {
+  model_name: string;
+  model_version: string;
+  score: number;
+  confidence: number;
+  verdict: "strong_candidate" | "promising" | "needs_manual_review" | "high_risk" | string;
+  summary: string;
+  strengths: string[];
+  risks: string[];
+  missing_parts: string[];
+  jury_questions: string[];
+  feature_weights: Record<string, number>;
+  signals: Record<string, number>;
+};
+
 export type ReviewDetail = ReviewSubmissionSummary & {
   repo_url: string | null;
   repo_archive: string | null;
@@ -157,6 +172,7 @@ export type ReviewDetail = ReviewSubmissionSummary & {
   presentation: string | null;
   screencast_file: string | null;
   screencast_url: string | null;
+  ai_review: AIReview;
   my_scores: ExpertScore[];
 };
 

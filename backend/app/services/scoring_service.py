@@ -22,6 +22,7 @@ from app.schemas.score import (
     ScoreCreate,
     ScoreUpdate,
 )
+from app.services.ai_review_model import build_ai_review
 from app.services.hackathon_service import get_hackathon
 
 
@@ -51,6 +52,7 @@ async def get_review_detail(db: AsyncSession, submission_id: UUID, jury: User) -
         presentation=submission.presentation,
         screencast_file=submission.screencast_file,
         screencast_url=submission.screencast_url,
+        ai_review=build_ai_review(submission),
         my_scores=[ExpertScoreResponse.model_validate(score) for score in my_scores],
     )
 

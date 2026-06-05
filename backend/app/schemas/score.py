@@ -35,6 +35,21 @@ class AutoCheckSummary(BaseModel):
     score: float | None
 
 
+class AIReviewResponse(BaseModel):
+    model_name: str
+    model_version: str
+    score: float
+    confidence: float
+    verdict: str
+    summary: str
+    strengths: list[str]
+    risks: list[str]
+    missing_parts: list[str]
+    jury_questions: list[str]
+    feature_weights: dict[str, float]
+    signals: dict[str, float]
+
+
 class ReviewSubmissionSummary(BaseModel):
     submission_id: uuid.UUID
     team_id: uuid.UUID
@@ -52,6 +67,7 @@ class ReviewDetailResponse(ReviewSubmissionSummary):
     presentation: str | None
     screencast_file: str | None
     screencast_url: str | None
+    ai_review: AIReviewResponse
     my_scores: list[ExpertScoreResponse]
 
 

@@ -1,12 +1,30 @@
-import { Save } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { AlertTriangle, BrainCircuit, CheckCircle2, CircleHelp, Gauge, Save } from "lucide-react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import toast from "react-hot-toast";
 import { Link, useParams } from "react-router-dom";
 
 import { api } from "../../api/client";
-import type { CheckType, Criterion, Hackathon, ReviewDetail } from "../../api/types";
+import type { AIReview, CheckType, Criterion, Hackathon, ReviewDetail } from "../../api/types";
 
 const tabs: CheckType[] = ["code", "documentation", "presentation", "screencast"];
+
+const verdictLabels: Record<string, string> = {
+  strong_candidate: "сильный кандидат",
+  promising: "перспективно",
+  needs_manual_review: "ручная проверка",
+  high_risk: "высокий риск",
+};
+
+const signalLabels: Record<string, string> = {
+  code_quality: "Код",
+  documentation_quality: "Документация",
+  pitch_quality: "Питч",
+  demo_readiness: "Готовность демо",
+  risk_level: "Риск",
+  completed_checks_ratio: "Проверки",
+  artifact_coverage: "Артефакты",
+};
 
 export function ReviewDetailPage() {
   const { submissionId } = useParams();
@@ -15,11 +33,7 @@ export function ReviewDetailPage() {
   const [activeTab, setActiveTab] = useState<CheckType>("code");
   const [scores, setScores] = useState<Record<string, { score: number; comment: string }>>({});
 
-  useEffect(() => {
-    void load();
-  }, [submissionId]);
-
-  async function load() {
+  const load = useCallback(async () => {
     if (!submissionId) {
       return;
     }
@@ -42,7 +56,11 @@ export function ReviewDetailPage() {
     } catch {
       toast.error("Не удалось загрузить оценку");
     }
-  }
+  }, [submissionId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   async function save(event: FormEvent) {
     event.preventDefault();
@@ -72,6 +90,8 @@ export function ReviewDetailPage() {
           <h1 className="mt-3 font-display text-2xl font-bold">{detail.team_name}</h1>
           <p className="mt-2 text-sm text-hs-t2">Авто-балл: {detail.auto_score ?? "-"} · моя оценка: {detail.my_score ?? "-"}</p>
         </div>
+
+        <AIReviewPanel review={detail.ai_review} />
 
         <div className="rounded-xl border border-hs-border bg-hs-card p-5">
           <div className="mb-4 flex flex-wrap gap-2">
@@ -127,6 +147,82 @@ export function ReviewDetailPage() {
           </button>
         </form>
       </aside>
+    </div>
+  );
+}
+
+function AIReviewPanel({ review }: { review: AIReview }) {
+  const confidencePercent = Math.round(review.confidence * 100);
+
+  return (
+    <div className="rounded-xl border border-hs-border bg-hs-card p-5 shadow-hs-panel">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <BrainCircuit className="size-5 text-hs-cyan" />
+            <h2 className="font-display text-lg font-bold">AI Review Model</h2>
+            <span className="badge">{review.model_version}</span>
+            <span className="badge">{verdictLabels[review.verdict] ?? review.verdict}</span>
+          </div>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-hs-t2">{review.summary}</p>
+        </div>
+
+        <div className="grid min-w-[180px] grid-cols-2 gap-3">
+          <div className="rounded-lg border border-hs-border bg-hs-bg p-3">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase text-hs-t3">
+              <Gauge className="size-4" />
+              AI-балл
+            </div>
+            <div className="mt-2 font-display text-2xl font-bold">{review.score.toFixed(1)}</div>
+          </div>
+          <div className="rounded-lg border border-hs-border bg-hs-bg p-3">
+            <div className="text-xs font-semibold uppercase text-hs-t3">Уверенность</div>
+            <div className="mt-2 font-display text-2xl font-bold">{confidencePercent}%</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-3">
+        <ReviewList icon={<CheckCircle2 className="size-4 text-hs-green" />} items={review.strengths} title="Сильные стороны" />
+        <ReviewList icon={<AlertTriangle className="size-4 text-amber-300" />} items={review.risks} title="Риски" />
+        <ReviewList icon={<CircleHelp className="size-4 text-hs-accent-light" />} items={review.jury_questions} title="Вопросы жюри" />
+      </div>
+
+      {review.missing_parts.length > 0 ? (
+        <div className="mt-4 rounded-lg border border-amber-300/20 bg-amber-300/10 p-3 text-sm text-amber-100">
+          Не хватает: {review.missing_parts.join(", ")}
+        </div>
+      ) : null}
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {Object.entries(review.signals).map(([name, value]) => (
+          <div className="rounded-lg border border-hs-border bg-hs-bg p-3" key={name}>
+            <div className="flex items-center justify-between gap-3 text-xs text-hs-t2">
+              <span>{signalLabels[name] ?? name}</span>
+              <span>{Math.round(value * 100)}%</span>
+            </div>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+              <div className="h-full rounded-full bg-hs-gradient" style={{ width: `${Math.round(value * 100)}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ReviewList({ icon, items, title }: { icon: ReactNode; items: string[]; title: string }) {
+  return (
+    <div className="rounded-lg border border-hs-border bg-hs-bg p-4">
+      <div className="mb-3 flex items-center gap-2 text-sm font-bold">
+        {icon}
+        {title}
+      </div>
+      <ul className="grid gap-2 text-sm leading-5 text-hs-t2">
+        {items.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
     </div>
   );
 }

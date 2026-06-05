@@ -5,7 +5,6 @@ import { AppLayout } from "./components/layout/AppLayout";
 import { ProtectedRoute } from "./components/layout/ProtectedRoute";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { RegisterPage } from "./pages/auth/RegisterPage";
-import { PlaceholderPage } from "./pages/common/PlaceholderPage";
 import { JuryLeaderboardPage } from "./pages/jury/JuryLeaderboardPage";
 import { ReviewDetailPage } from "./pages/jury/ReviewDetailPage";
 import { ReviewListPage } from "./pages/jury/ReviewListPage";
